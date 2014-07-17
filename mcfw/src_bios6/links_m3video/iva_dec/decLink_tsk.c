@@ -72,7 +72,7 @@ Void DecLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
                 Utils_tskAckOrFreeMsg(pMsg, status);
 
                 flushCmds[0] = DEC_LINK_CMD_GET_PROCESSED_DATA;
-                Utils_tskFlushMsg(pTsk, flushCmds, 1);
+   		  Utils_tskFlushMsg(pTsk, flushCmds, 1);
 
                 DecLink_codecGetProcessedDataMsgHandler(pObj);
                 break;

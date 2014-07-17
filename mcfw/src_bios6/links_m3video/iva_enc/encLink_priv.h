@@ -68,8 +68,9 @@
 #define ENC_LINK_MAX_TASK_NAME_SIZE          (32)
 
 #define ENC_LINK_TASK_POLL_DURATION_MS       (8)
-
-#define ENC_LINK_PROCESS_DONE_PERIOD_MS      (4)
+//modify by zm
+//#define ENC_LINK_PROCESS_DONE_PERIOD_MS      (4)
+#define ENC_LINK_PROCESS_DONE_PERIOD_MS      (1)
 #define ENC_LINK_STATS_START_THRESHOLD       (5)
 #define ENC_LINK_REQLIST_MAX_REQOBJS         (4)
 #define ENC_LINK_NUM_ALGPROCESS_PER_HDVICP_ACQUIRE                       (8)
@@ -222,6 +223,8 @@ typedef struct EncLink_periodicObj {
     Bool clkStarted;
 } EncLink_periodicObj;
 
+#define 	MP_SKIP_FRAME_INTERVAL		(3)
+
 typedef struct EncLink_ChObj {
     Utils_QueHandle inQue;
     EncLink_algObj algObj;
@@ -250,6 +253,17 @@ typedef struct EncLink_ChObj {
     UInt32 maxLatency;
     Bool   forceAvoidSkipFrame;
     Bool   forceDumpFrame;
+	
+UInt32 start_time;
+UInt32 prev_fps;
+UInt32 prev_time;
+UInt32 frame_cnt;
+ UInt32 frame_mis;
+ UInt32 skip_flag;
+ UInt32 in_frame_cnt;
+ UInt32 out_frame_cnt;
+ UInt32 in_prev_time;
+
 } EncLink_ChObj;
 typedef struct EncLink_ReqBatchStatistics {
     UInt32 numBatchesSubmitted;
@@ -350,6 +364,7 @@ Int32 EncLink_codecDisableChannel(EncLink_Obj * pObj,
                               EncLink_ChannelInfo* params);
 Int32 EncLink_codecEnableChannel(EncLink_Obj * pObj,
                               EncLink_ChannelInfo* params);
+Bool  EncLink_doSkipFrame_Only30fps(EncLink_ChObj *pChObj, Int32 chId);
 Bool  EncLink_doSkipFrame(EncLink_ChObj *pChObj, Int32 chId);
 Int32 EncLinkH264_algSetConfig(EncLink_algObj * algObj);
 

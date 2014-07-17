@@ -357,5 +357,5 @@ Int32 DecLinkMPEG4_codecFlush(DecLink_ChObj *pChObj,
         }                                                                      \
       } while (0)
 
-#endif                                                     /* _DEC_LINK_PRIV_H_
-                                                            */
+#endif                                                   
+

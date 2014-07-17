@@ -145,8 +145,6 @@ Int32 DupLink_drvProcessFrames(DupLink_Obj * pObj)
     System_getLinksFullFrames(pCreateArgs->inQueParams.prevLinkId,
                               pCreateArgs->inQueParams.prevLinkQueId,
                               &pObj->inFrameList);
-	
-    Vps_printf(" DUP  before :   numFrames=%d !!!\n",pObj->inFrameList.numFrames );
 
     if (pObj->inFrameList.numFrames)
     {
@@ -157,7 +155,7 @@ Int32 DupLink_drvProcessFrames(DupLink_Obj * pObj)
         {
             pObj->outFrameList[outId].numFrames = 0;
         }
-	
+
         for (frameId = 0; frameId < pObj->inFrameList.numFrames; frameId++)
         {
             pOrgFrame = pObj->inFrameList.frames[frameId];
@@ -192,10 +190,7 @@ Int32 DupLink_drvProcessFrames(DupLink_Obj * pObj)
                 pObj->outFrameList[outId].numFrames++;
             }
         }
-    Vps_printf(" DUP  after :   numFrames=%d !!!\n",pObj->inFrameList.numFrames );
 
-	Vps_printf("Dup :numOutQue=%d\n",pCreateArgs->numOutQue);
-	
         for (outId = 0; outId < pCreateArgs->numOutQue; outId++)
         {
             status =

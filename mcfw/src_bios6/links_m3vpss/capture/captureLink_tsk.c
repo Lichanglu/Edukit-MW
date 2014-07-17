@@ -350,7 +350,6 @@ Void CaptureLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
 
     pObj = (CaptureLink_Obj *) pTsk->appData;
 
-
     if (cmd != SYSTEM_CMD_CREATE)
     {
         /* invalid command recived in IDLE status, be in IDLE state and ACK
@@ -358,7 +357,7 @@ Void CaptureLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
         Utils_tskAckOrFreeMsg(pMsg, FVID2_EFAIL);
         return;
     }
-	Vps_printf("CAPTURE SYSTEM_CMD_CREATE success!\n");
+
     /* Create command received, create the driver */
 
     status = CaptureLink_drvCreate(pObj, Utils_msgGetPrm(pMsg));
@@ -417,14 +416,11 @@ Void CaptureLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
                 break;
 
             case SYSTEM_CMD_START:
-
-		Vps_printf("CAPLink start\n");
                 /* Start capture driver */
                 status = CaptureLink_drvStart(pObj);
 
                 /* ACK based on create status */
                 Utils_tskAckOrFreeMsg(pMsg, status);
-		
 
                 /* if start status is error then remain in READY state */
                 if (status == FVID2_SOK)

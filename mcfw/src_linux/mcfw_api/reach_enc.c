@@ -58,7 +58,8 @@ Int32 enc_set_fps(Uint32 encId, Uint32 chId, Uint32 fps, Uint32 bitate)
 	EncLink_ChFpsParams params = { 0 };
 
 	params.chId = chId;
-	params.targetFps = fps*1000;
+	params.targetFps =fps*1000;
+	
 	params.targetBitRate = bitate;
 	
 	if(encId != SYSTEM_LINK_ID_INVALID) {
@@ -151,6 +152,22 @@ Int32 enc_print_buffer_statistics(Uint32 encId)
 	                                           	0,
 	                                           	TRUE
 	                                           	);
+	}
+
+	return status;
+}
+
+Int32 enc_reset_skip_frame(Uint32 encId)
+{
+	Int32 status = -1;
+	
+	if(encId != SYSTEM_LINK_ID_INVALID) {
+		status = System_linkControl(encId,
+						ENC_LINK_CMD_RESET_SKIP_FRAME,
+						NULL,
+						0,
+						TRUE
+						);
 	}
 
 	return status;

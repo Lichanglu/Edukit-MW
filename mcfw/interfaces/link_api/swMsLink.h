@@ -120,6 +120,7 @@ typedef struct
 
          Example, for 60fps display, outputFPS should be 60
     */
+    UInt32 prev_outputFPS;
 
 } SwMsLink_LayoutPrm;
 

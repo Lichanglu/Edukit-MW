@@ -23,11 +23,7 @@ Int32 SwMsLink_updateLayoutParams(SwMsLink_LayoutPrm * layoutParams,  UInt32 out
     for (winId = 0; winId < layoutParams->numWin; winId++)
     {
         winInfo = &(layoutParams->winInfo[winId]);
-#if  0//add by lichl
-	if(winInfo->startX < 0 || winInfo->startX < 0){
-		continue;
-	}
-#endif
+
         /* Align window width and height  */
         winInfo->width = SystemUtils_align(winInfo->width,(SYSTEM_BUFFER_ALIGNMENT/2));
         winInfo->height = SystemUtils_align(winInfo->height,2);

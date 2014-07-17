@@ -49,7 +49,6 @@ Int32 SelectLink_drvCreate(SelectLink_Obj * pObj, SelectLink_CreateParams * pPrm
     /* copy previous link channel info to local params */
     for(inChId=0; inChId<pInQueInfo->numCh; inChId++)
     {
-    	Vps_printf(" SELECT   :   pInQueInfo->numCh=%d!!!\n",  pInQueInfo->numCh);
         pInChInfo = &pObj->inChInfo[inChId];
 
         pInChInfo->rtChInfo = pInQueInfo->chInfo[inChId];
@@ -75,7 +74,6 @@ Int32 SelectLink_drvCreate(SelectLink_Obj * pObj, SelectLink_CreateParams * pPrm
         UTILS_assert(status==FVID2_SOK);
 
         pOutQueInfo->numCh = pOutQueChInfo->numOutCh;
-    	Vps_printf(" SELECT   :   pOutQueInfo->numCh=%d!!!\n",  pOutQueInfo->numCh);
 
         for(outChId=0; outChId<pOutQueInfo->numCh; outChId++)
         {
@@ -306,6 +304,7 @@ Int32 SelectLink_drvGetOutQueChInfo(SelectLink_Obj * pObj, SelectLink_OutQueChIn
 
     /* copy current output que info to user supplied pointer */
     pPrm->numOutCh = pPrevPrm->numOutCh;
+
     if(pPrm->numOutCh > SYSTEM_MAX_CH_PER_OUT_QUE)
     {
         pPrm->numOutCh = 0;
@@ -315,7 +314,6 @@ Int32 SelectLink_drvGetOutQueChInfo(SelectLink_Obj * pObj, SelectLink_OutQueChIn
     for(outChNum=0; outChNum<pPrevPrm->numOutCh; outChNum++)
     {
         pPrm->inChNum[outChNum] = pPrevPrm->inChNum[outChNum];
- 	Vps_printf("Select: pPrm->numOutCh=%d , outQueId =%d,pPrm->inChNum[%d]=%d\n ",pPrm->numOutCh,pPrm->outQueId, outChNum,pPrm->inChNum[outChNum] );
     }
 
     return FVID2_SOK;
@@ -367,6 +365,7 @@ Int32 SelectLink_drvProcessFrames(SelectLink_Obj * pObj)
 
     pCreateArgs = &pObj->createArgs;
 	SelectID = SYSTEM_GET_LINK_ID(pObj->tskId)- SYSTEM_LINK_ID_SELECT_0;
+
     System_getLinksFullFrames(pCreateArgs->inQueParams.prevLinkId,
                               pCreateArgs->inQueParams.prevLinkQueId,
                               &frameList);
@@ -459,7 +458,6 @@ Int32 SelectLink_drvProcessFrames(SelectLink_Obj * pObj)
         }
 
     }
-  //   Vps_printf("SELECT[%d]: pFrame->channelNum =%d.pCreateArgs->numOutQue=%d\n",SelectID, pFrame->channelNum,pCreateArgs->numOutQue );
 
     return FVID2_SOK;
 }
@@ -544,7 +542,7 @@ Void SelectLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
                 Utils_tskAckOrFreeMsg(pMsg, status);
                 break;
 
-		case SELECT_LINK_CMD_SET_OUT_QUE_CH_INFO2:
+			case SELECT_LINK_CMD_SET_OUT_QUE_CH_INFO2:
                 SelectLink_drvSetOutQueChInfo2(
                     pObj,
                     (SelectLink_OutQueChInfo*)Utils_msgGetPrm(pMsg)

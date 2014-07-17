@@ -18,7 +18,6 @@
 #include "encLink_h264_priv.h"
 #include "encLink_jpeg_priv.h"
 
-
 typedef struct encLinkResClassChannelInfo {
     UInt32 numActiveResClass;
     struct resInfo_s {
@@ -116,6 +115,9 @@ static Int32 EncLink_codecGetProcessedData(EncLink_Obj * pObj);
 static Int32 EncLink_codecDynamicResolutionChange(EncLink_Obj * pObj,
         EncLink_ReqObj * pReqObj,
         UInt32 chId);
+
+static Bool EncLink_doSkipFrame_only25fps(EncLink_ChObj *pChObj, Int32 chId);
+
 
 static Int32 EncLink_PrepareBatch (EncLink_Obj *pObj, UInt32 tskId,
                                    EncLink_ReqObj *pReqObj,
@@ -590,7 +592,6 @@ static Int32 EncLink_codecCreateOutObj(EncLink_Obj * pObj)
 	UTILS_assert(status == FVID2_SOK);
 	
 	totalBufCnt = 0;
-	Vps_printf("EncLink_codecCreateOutObj:numAllocPools=%d,outNumBufs=%d\n",pOutObj->numAllocPools,pOutObj->outNumBufs[pOutObj->numAllocPools]);
 	for (i = 0; i < pOutObj->numAllocPools; i++)
 	{
 		Vps_printf("EncLink_codecCreateOutObj: numAllocPools[%d]  buf_size[%d] outNumBufs[%d]\n",\
@@ -708,7 +709,8 @@ static Int32 enclink_codec_set_ch_alg_create_params(EncLink_Obj * pObj,
 	                          TRUE);
 	                          
 	Vps_printf("pChAlgCreatePrm->maxWidth = %d pChAlgCreatePrm->maxHeight =%d %d\n",pChAlgCreatePrm->maxWidth,pChAlgCreatePrm->maxHeight,pChAlgCreatePrm->level);
-	pChAlgCreatePrm->level = IH264_LEVEL_51;
+//	pChAlgCreatePrm->level = IH264_LEVEL_51;
+	pChAlgCreatePrm->level = pChCreatePrm->encLevel;
 	pChAlgCreatePrm->tilerEnable = FALSE;
 	
 	if (pInChInfo->memType == VPS_VPDMA_MT_TILEDMEM)
@@ -717,7 +719,7 @@ static Int32 enclink_codec_set_ch_alg_create_params(EncLink_Obj * pObj,
 	}
 	
 #ifndef SYSTEM_USE_TILER
-	UTILS_assert(FALSE == pChAlgCreatePrm->tilerEnable);	
+	UTILS_assert(FALSE == pChAlgCreatePrm->tilerEnable);
 #endif
 	
 	pChAlgCreatePrm->enableAnalyticinfo = pChCreatePrm->enableAnalyticinfo;
@@ -774,23 +776,23 @@ static Int32 enclink_codec_set_ch_alg_default_dynamic_params(EncLink_Obj * pObj,
 		pChAlgDynPrm->targetFrameRate = ENC_LINK_MJPEG_DEFAULT_ALGPARAMS_TARGETFRAMERATEX1000;
 		pChAlgDynPrm->refFrameRate    = ENC_LINK_MJPEG_DEFAULT_ALGPARAMS_REFFRAMERATEX1000;
 	}
-	else{
-		
-		Vps_printf(" pChAlgCreatePrm->format = %d,pObj=0x%p\n",pChAlgCreatePrm->format,pObj);
+	else
 		if (
 		    (pChAlgCreatePrm->format ==  IVIDEO_H264BP) ||
 		    (pChAlgCreatePrm->format ==  IVIDEO_H264MP) ||
 		    (pChAlgCreatePrm->format ==  IVIDEO_H264HP)
 		)
 		{
-			pChAlgDynPrm->targetFrameRate   = ENC_LINK_DEFAULT_ALGPARAMS_TARGETFRAMERATEX1000;
-			pChAlgDynPrm->refFrameRate      = ENC_LINK_DEFAULT_ALGPARAMS_REFFRAMERATEX1000;
+//			pChAlgDynPrm->targetFrameRate   = ENC_LINK_DEFAULT_ALGPARAMS_TARGETFRAMERATEX1000;
+//			pChAlgDynPrm->refFrameRate      = ENC_LINK_DEFAULT_ALGPARAMS_REFFRAMERATEX1000;	
+			pChAlgDynPrm->targetFrameRate   = ENC_LINK_DEFAULT_ALGPARAMS_TARGETFRAMERATEX1000/2;
+			pChAlgDynPrm->refFrameRate      = ENC_LINK_DEFAULT_ALGPARAMS_REFFRAMERATEX1000/2;
 		}
 		else
 		{
 			UTILS_assert(FALSE); //Format is not supported
 		}
-	}
+		
 	pChAlgDynPrm->intraFrameInterval    = pChDynPrm->intraFrameInterval;
 	pChAlgDynPrm->interFrameInterval    = pChDynPrm->interFrameInterval;
 	pChAlgDynPrm->rcAlg                 = pChDynPrm->rcAlg;
@@ -1140,7 +1142,7 @@ Int32 EncLink_codecCreate(EncLink_Obj * pObj, EncLink_CreateParams * pPrm)
 	EncLink_codecCreateOutObj(pObj);
 	EncLink_codecCreateReqObj(pObj);
 	pObj->state = SYSTEM_LINK_STATE_START;
-	Vps_printf("EncLink_codecCreate:inQueInfo.numCh=%d\n",pObj->inQueInfo.numCh);
+	
 	for (chId = 0; chId < pObj->inQueInfo.numCh; chId++)
 	{
 		pChObj = &pObj->chObj[chId];
@@ -1163,10 +1165,16 @@ Int32 EncLink_codecCreate(EncLink_Obj * pObj, EncLink_CreateParams * pPrm)
 		pChObj->inFrameQueCount = 0;
 		pChObj->processReqestCount = 0;
 		pChObj->getProcessedFrameCount = 0;
-		EncLink_codecCreateChObj(pObj, chId);
+		//add by lichl
+		pChObj->frame_cnt=0;
+		pChObj->start_time=0;
+		pChObj->skip_flag=0;
+		pChObj->prev_time=0;
+		pChObj->prev_fps=0;
+		pChObj->frame_mis=0;
+//		memset(pChObj->frame_pond,0,sizeof(pChObj->frame_pond));
 		
-		Vps_printf(" EncLink_codecCreateEncObj:pObj=0x%p,chid=%d !!!\n",pObj,chId);
-		        
+		EncLink_codecCreateChObj(pObj, chId);
 		EncLink_codecCreateEncObj(pObj, chId);
 	}
 	
@@ -1213,6 +1221,7 @@ static Int32 EncLink_codecQueueFramesToChQue(EncLink_Obj * pObj)
 	Int32 status;
 	UInt32 curTime;
 	Bool skipFrame;
+	UInt32 Time_interval=0;
 	
 	pInQueParams = &pObj->createArgs.inQueParams;
 	
@@ -1228,90 +1237,91 @@ static Int32 EncLink_codecQueueFramesToChQue(EncLink_Obj * pObj)
         freeFrameNum = 0;
         curTime = Utils_getCurTimeInMsec();
 
-        for (frameId = 0; frameId < frameList.numFrames; frameId++)
-        {
-            pFrame = frameList.frames[frameId];
+	for (frameId = 0; frameId < frameList.numFrames; frameId++)
+	{
+		pFrame = frameList.frames[frameId];
 
-            pChObj = &pObj->chObj[pFrame->channelNum];
+		pChObj = &pObj->chObj[pFrame->channelNum];
+		pChObj->inFrameRecvCount++;
+		pObj->ulEncFrameRate[pFrame->channelNum]++;
+		if (( FALSE == pChObj->algObj.algCreateParams.singleBuf) ||
+		(pObj->inQueInfo.chInfo[pFrame->channelNum].scanFormat ==
+		FVID2_SF_PROGRESSIVE))
+		{
+			pChObj->nextFid = pFrame->fid;
+		}
 
-            pChObj->inFrameRecvCount++;
-			pObj->ulEncFrameRate[pFrame->channelNum]++;
-            if (( FALSE == pChObj->algObj.algCreateParams.singleBuf) ||
-                (pObj->inQueInfo.chInfo[pFrame->channelNum].scanFormat ==
-                                               FVID2_SF_PROGRESSIVE))
-            {
-                pChObj->nextFid = pFrame->fid;
-            }
+		skipFrame = FALSE;
 
-            skipFrame = FALSE;
-            if(pChObj->forceDumpFrame == FALSE)
-            {
-                skipFrame = EncLink_doSkipFrame(pChObj, pFrame->channelNum);
+		if(pChObj->forceDumpFrame == FALSE)
+		{
+			skipFrame = EncLink_doSkipFrame_Only30fps(pChObj, pFrame->channelNum);
 
-                if (pChObj->forceAvoidSkipFrame == TRUE)
-                    skipFrame = FALSE;
-            }
-            else
-            {
-                pChObj->forceDumpFrame = FALSE;
-            }
+			if (pChObj->forceAvoidSkipFrame == TRUE)
+				skipFrame = FALSE;
+		}
+		else
+		{
+			pChObj->forceDumpFrame = FALSE;
+		}
 
-            pChObj->curFrameNum++;
+		pChObj->curFrameNum++;
 
-            /* frame skipped due to user setting */
-            if(skipFrame || pChObj->disableChn)
-                pChObj->inFrameUserSkipCount++;
+		/* frame skipped due to user setting */
+		if(skipFrame || pChObj->disableChn)
+			pChObj->inFrameUserSkipCount++;
 
-            /* frame skipped due to framework */
-            if(pChObj->nextFid != pFrame->fid && pFrame->fid != FVID2_FID_FRAME)
-                pChObj->inFrameRejectCount++;
+		/* frame skipped due to framework */
+		if(pChObj->nextFid != pFrame->fid && pFrame->fid != FVID2_FID_FRAME)
+			pChObj->inFrameRejectCount++;
 
-            if (((pChObj->nextFid == pFrame->fid) ||
-                (pFrame->fid == FVID2_FID_FRAME)) &&
-                (pChObj->disableChn != TRUE) && (skipFrame == FALSE))
-            {
-                // frame is of the expected FID use it, else drop it
-                pChObj->totalInFrameCnt++;
-                if (pChObj->totalInFrameCnt > ENC_LINK_STATS_START_THRESHOLD)
-                {
-                    pChObj->totalFrameIntervalTime +=
-                        (curTime - pChObj->prevFrmRecvTime);
+		if (((pChObj->nextFid == pFrame->fid) ||(pFrame->fid == FVID2_FID_FRAME)) 
+		&& (pChObj->disableChn != TRUE) && (skipFrame == FALSE))
+		{
+			// frame is of the expected FID use it, else drop it
+			pChObj->totalInFrameCnt++;
+			if (pChObj->totalInFrameCnt > ENC_LINK_STATS_START_THRESHOLD)
+			{
+				pChObj->totalFrameIntervalTime +=
+				(curTime - pChObj->prevFrmRecvTime);
 
-                    /* reserved field in FVID2_Frame used as place holder
-                        for current time of submission to encode
+				/* reserved field in FVID2_Frame used as place holder
+				for current time of submission to encode
 
-                        timeStamp has original capture stamp so that should not be modified
-                    */
-                    pFrame->reserved = (Ptr)curTime;
-                }
-                else
-                {
-                    pChObj->totalFrameIntervalTime = 0;
-                    pChObj->totalProcessTime = 0;
+				timeStamp has original capture stamp so that should not be modified
+				*/
+				pFrame->reserved = (Ptr)curTime;
+			}
+			else
+			{
+				pChObj->totalFrameIntervalTime = 0;
+				pChObj->totalProcessTime = 0;
 
-                    EncLink_resetStatistics(pObj);
-                }
-                pChObj->prevFrmRecvTime = curTime;
+				EncLink_resetStatistics(pObj);
+			}
+			pChObj->prevFrmRecvTime = curTime;
 
-                status = Utils_quePut(&pChObj->inQue, pFrame, BIOS_NO_WAIT);
-                UTILS_assert(status == FVID2_SOK);
-                pChObj->inFrameQueCount++;
-                pChObj->nextFid ^= 1;                      // toggle to next
-                                                           // required FID
-            }
-            else
-            {
-                pChObj->inFrameSkipCount++;
+			status = Utils_quePut(&pChObj->inQue, pFrame, BIOS_NO_WAIT);
+			UTILS_assert(status == FVID2_SOK);
+			pChObj->inFrameQueCount++;
+			pChObj->nextFid ^= 1;                      // toggle to next
 
-                // frame is not of expected FID, so release frame
-                frameList.frames[freeFrameNum] = pFrame;
-                freeFrameNum++;
-                if (pChObj->nextFid == pFrame->fid) 
-                {
-                    pChObj->nextFid ^= 1;  // toggle to next
-                }
-            }
-        }
+		// required FID
+		}
+		else
+		{
+			pChObj->inFrameSkipCount++;
+
+			// frame is not of expected FID, so release frame
+			frameList.frames[freeFrameNum] = pFrame;
+			freeFrameNum++;
+			if (pChObj->nextFid == pFrame->fid) 
+			{
+			pChObj->nextFid ^= 1;  // toggle to next
+			}
+		}
+	}
+
 
         if (freeFrameNum)
         {
@@ -1418,6 +1428,9 @@ static Int32 EncLink_codecSubmitData(EncLink_Obj * pObj)
 						pChObj->inFrameSkipCount++;
 						pChObj->inFrameRejectCount++;
 						freeFrameNum++;
+						
+						if(pChObj->frame_cnt > 0 )
+							pChObj->frame_cnt -- ; //25Ö¡Ìø
 						pChObj->forceAvoidSkipFrame = TRUE;
 					}
 					
@@ -1444,6 +1457,9 @@ static Int32 EncLink_codecSubmitData(EncLink_Obj * pObj)
 						pChObj->inFrameSkipCount++;
 						pChObj->inFrameRejectCount++;
 						freeFrameNum++;
+						
+						if(pChObj->frame_cnt > 0 )
+							pChObj->frame_cnt -- ; //25Ö¡Ìø
 						pChObj->forceAvoidSkipFrame = TRUE;
 					}
 				}
@@ -1944,7 +1960,8 @@ Int32 EncLink_codecSetFps(EncLink_Obj * pObj, EncLink_ChFpsParams * params)
 	pChObj->frameStatus.firstTime = TRUE;
 	
 	pChObj->algObj.algDynamicParams.targetFrameRate = params->targetFps;
-	
+
+
 	//pChObj->algObj.algDynamicParams.targetFrameRate = params->targetFps;
 	Vps_printf("--------EncLink_codecSetFps [%d] [%d] [%d]---------\n",\
 				params1.inputFps, pObj->ulHistoryFrameRate[params->chId],\
@@ -2136,30 +2153,166 @@ Int32 EncLink_codecEnableChannel(EncLink_Obj * pObj,
 	
 	return (status);
 }
-Bool  EncLink_doSkipFrame(EncLink_ChObj *pChObj, Int32 chId)
-{
-	static UInt32 prevTime[SYSTEM_MAX_CH_PER_OUT_QUE] = {0};
-	 
-	if(chId == 1) {
-		prevTime[chId]++;
-		if(prevTime[chId] == 6) {
-			prevTime[chId] = 0;
-			return TRUE;
-		}
+
+#define 	INTERVAL_TIME      1000
+#define MAX_INTERVAL_TIME	660000
+#define	MAX_MP_TIME		720000
+#define 	MP_INTERVAL_TIME      3000
+#define  STD_FPS_30			2997
+#define  STD_FPS_25			2500
+#define FRAME_MAX_CNT		40000
+
+Bool  EncLink_doSkipFrame_Only30fps(EncLink_ChObj *pChObj, Int32 chId)
+{	
+	UInt32 fps=0;
+	UInt32 timeout=0;
+	UInt32 std_fps=0;
+	UInt32 temp_frame_cnt=0;
+	UInt32 currTime =  Utils_getCurTimeInMsec();
+	 if( 0 ==  pChObj->start_time  ||  pChObj->prev_fps !=pChObj->algObj.algDynamicParams.targetFrameRate){ 
+		  pChObj->prev_fps= pChObj->algObj.algDynamicParams.targetFrameRate;
+		  pChObj->start_time = currTime;
+		  pChObj->frame_cnt=0;
+		 pChObj->frame_mis=0;
+		pChObj->skip_flag = currTime;
+	 }
+	 if( 30000 == pChObj->algObj.algDynamicParams.targetFrameRate ){
+		std_fps = STD_FPS_30;
+	 }else{
+		 std_fps = 40;
+	 }
+	 pChObj->frame_cnt++;
+	timeout = (currTime - pChObj->start_time);
+	if( 40 == std_fps){
+		temp_frame_cnt = (timeout)/(std_fps);
+	}else{
+		temp_frame_cnt=(std_fps*timeout)/(100*1000);
 	}
-	else {
-		prevTime[chId]++;
-		if(prevTime[chId] == 95) {
-			prevTime[chId] = 0;
-			return TRUE;
+	if(  pChObj->frame_cnt  > (temp_frame_cnt+1 )){
+		pChObj->frame_mis++;
+		 pChObj->frame_cnt--;		 
+		if(chId ==2  || chId == 3 ){
+	//		Vps_printf("----12-chId=%d---frameCnt=%d---Time=%d--frame_mis=%d--STD_frame_cnt=%d--fps=%0.3f\n",
+	//			chId,pChObj->frame_cnt,currTime - pChObj->start_time,pChObj->frame_mis,temp_frame_cnt,(float)(pChObj->frame_cnt*1000.0)/(Utils_getCurTimeInMsec()-pChObj->skip_flag));
 		}
-	}		
+		return TRUE;
+	}
+	
+	if(pChObj->frame_cnt > FRAME_MAX_CNT){
+		UInt32 temp_fps2= ((pChObj->frame_mis+pChObj->frame_cnt)*1000*100)/(timeout);		
+		Vps_printf("------11chId=%d,Total Frame=%d, Time=%d, frame_mis=%d-,AveFps=%0.3f-----Infps=%d------\n",
+			chId,pChObj->frame_cnt,timeout,(pChObj->frame_mis),(float)(pChObj->frame_cnt*1000.0)/(Utils_getCurTimeInMsec()-pChObj->skip_flag),temp_fps2);
+		pChObj->frame_cnt = 0;
+		pChObj->start_time = currTime;
+		pChObj->frame_mis = 0;
+		pChObj->skip_flag=currTime;
+	}
+	
+
+	if(  (currTime -  pChObj->prev_time )>6000){
+		UInt32 temp_fps= (pChObj->frame_cnt*1000*100)/(timeout);
+//		Vps_printf("------chId=%d,Total Frame=%d, Time=%d,-----frame_mis=%d->AveFPS=%d.......fps=%0.3f------\n",
+//			chId,pChObj->frame_cnt,timeout,pChObj->frame_mis,temp_fps,(float)(pChObj->frame_cnt*1000.0)/(Utils_getCurTimeInMsec()-pChObj->skip_flag));
+		 pChObj->prev_time = currTime;
+	}
 	return FALSE;
 }
 
-#if 0
+void EncLink_resetSkipFrame(EncLink_Obj *pObj)
+{
+	int i = 0 ;
+	EncLink_ChObj *pChObj=NULL;
+	for( i = 0 ;  i <4 ;i++){
+		pChObj = &pObj->chObj[i];
+		pChObj->frame_cnt = 0;
+		pChObj->start_time = 0;
+		pChObj->frame_mis = 0;
+		pChObj->skip_flag = 0 ;
+	}
+}
+
+
+static Bool EncLink_doSkipFrame_only25fps(EncLink_ChObj *pChObj, Int32 chId)
+{
+	UInt32 currTime =  Utils_getCurTimeInMsec();
+	UInt32 interval = 0;
+	UInt32 int_frame_num=0;
+	 if(25000 ==  pChObj->algObj.algDynamicParams.targetFrameRate){
+		interval = 40;
+	}
+	#if 1
+	if( pChObj->start_time == 0 || pChObj->prev_fps !=  pChObj->algObj.algDynamicParams.targetFrameRate){
+		if( pChObj->skip_flag > 150){
+			 pChObj->prev_fps= pChObj->algObj.algDynamicParams.targetFrameRate;
+			 pChObj->start_time = currTime;
+			 pChObj->frame_cnt=0;
+			 return FALSE;
+		}
+		pChObj->skip_flag++;
+		 return FALSE;
+	}
+	#endif
+	 pChObj->frame_cnt++;
+	
+	if(currTime -  pChObj->prev_time >= INTERVAL_TIME    ) {
+		 pChObj->prev_time  = currTime;	
+		int_frame_num =(((currTime - pChObj->start_time))/interval);
+		if(  pChObj->frame_cnt  > int_frame_num ){			
+//			Vps_printf(" chId=%d--!frame_cnt[chId] = %d>%d,time=%d \n",chId, pChObj->frame_cnt,int_frame_num,currTime - pChObj->start_time);			
+			 pChObj->frame_cnt--;
+			return TRUE;
+		}
+	}
+	if(  (currTime -  pChObj->start_time )> MAX_INTERVAL_TIME){
+		Vps_printf("------chId=%d,Total Frame=%d, Time=%d,Ave=%dfps-----------\n",chId,pChObj->frame_cnt,currTime -  pChObj->start_time,pChObj->frame_cnt*1000/(currTime -  pChObj->start_time ));
+		 pChObj->start_time = currTime;
+		 pChObj->frame_cnt=0;
+//		 pChObj->frame_cnt++;
+	}
+	
+	return FALSE;	
+}
+
+#if 1
 Bool  EncLink_doSkipFrame(EncLink_ChObj *pChObj, Int32 chId)
 {
+	int i=0;
+	int keep_frame=0;
+	UInt32 currTime =  Utils_getCurTimeInMsec();
+	#if 0
+	if( chId == 3 || 2==  chId ){
+
+		 pChObj->frame_cnt++;
+		if(currTime -  pChObj->prev_time >= 1000    ) {
+
+			 pChObj->prev_time  = currTime;
+			for( i = 0 ; i < MP_SKIP_FRAME_INTERVAL-1;i++){
+				 pChObj->frame_pond[i]= pChObj->frame_pond[i+1];
+				keep_frame +=  pChObj->frame_pond[i+1];
+			}
+			 pChObj->frame_pond[MP_SKIP_FRAME_INTERVAL-1]= pChObj->frame_cnt;
+			
+			 pChObj->frame_cnt=0;
+			if(  pChObj->skip_flag > 0 ){
+				 pChObj->skip_flag --;
+			}else{	
+				keep_frame+= pChObj->frame_pond[MP_SKIP_FRAME_INTERVAL-1];	
+				if(  keep_frame > pChObj->algObj.algDynamicParams.targetFrameRate/1000*MP_SKIP_FRAME_INTERVAL){
+					 pChObj->skip_flag = MP_SKIP_FRAME_INTERVAL; 
+				//	return TRUE;
+				}
+			}
+		}	
+	} else 
+	#endif
+	if(chId ==0 || 1 == chId ||3 == chId ){
+		if( TRUE == EncLink_doSkipFrame_only25fps(pChObj,chId)	){
+			return TRUE;
+		}
+		return FALSE;
+	}
+	
+//------------------------------------------
 	/*if the target framerate has changed, first time case needs to be visited?*/
 	if(pChObj->frameStatus.firstTime)
 	{

@@ -49,7 +49,9 @@
  *         input ListMP when configured to operate in noNotify mode.
  *         @sa IpcBitsInLinkHLOS_CreateParams.noNotifyMode
  */
-#define IPC_BITS_IN_PROCESS_PERIOD_MS  (16)
+ //modify by zm
+//#define IPC_BITS_IN_PROCESS_PERIOD_MS  (16)
+#define IPC_BITS_IN_PROCESS_PERIOD_MS  (1)
 /**
  *  @def   IPC_BITS_IN_LINK_S_SUCCESS
  *  @brief Define used to indicate successful execution

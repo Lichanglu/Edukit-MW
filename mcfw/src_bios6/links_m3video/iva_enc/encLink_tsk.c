@@ -125,8 +125,9 @@ Void EncLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
                     = pObj->chObj[params->chId].algObj.algDynamicParams.intraFrameInterval;
 
                 Utils_tskAckOrFreeMsg(pMsg, status);
-
+		
                 EncLink_codecGetDynParams(pObj, params);
+		EncLink_resetSkipFrame(pObj);
                 }
                 break;
 
@@ -263,6 +264,10 @@ Void EncLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
                 EncLink_printBufferStatus(pObj);
                 break;
 
+	case ENC_LINK_CMD_RESET_SKIP_FRAME:
+		EncLink_resetSkipFrame(pObj);
+		break;
+
             case SYSTEM_CMD_STOP:
                 EncLink_codecStop(pObj);
                 Utils_tskAckOrFreeMsg(pMsg, status);
@@ -273,6 +278,7 @@ Void EncLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
                 done = TRUE;
                 ackMsg = TRUE;
                 break;
+			
 
             default:
                 Utils_tskAckOrFreeMsg(pMsg, status);

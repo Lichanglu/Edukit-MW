@@ -29,8 +29,10 @@
 #define REACH_IPCBITS_SENDFXN_TSK_STACK_SIZE            (0) /* 0 means system default will be used */
 #define REACH_IPCBITS_RECVFXN_TSK_STACK_SIZE            (0)
 
-#define REACH_SEND_FXN_WAIT_USECOND						(8)
-#define REACH_RECV_FXN_WAIT_USECOND						(8)
+#define REACH_SEND_FXN_WAIT_USECOND						(1)
+//modify by zm 
+//#define REACH_RECV_FXN_WAIT_USECOND						(8)
+#define REACH_RECV_FXN_WAIT_USECOND						(1)
 
 
 typedef struct _ipcbit_process_st_ {
@@ -148,9 +150,9 @@ static Void bits_send_full_bitbufs(Void * prm)
 {
 	ipcbit_process_st *pipcbit = (ipcbit_process_st *)prm;
 	
-    Bitstream_BufList fullBufList;
-    Bitstream_Buf *pBuf;
-    Int status;
+    	Bitstream_BufList fullBufList;
+    	Bitstream_Buf *pBuf;
+    	Int status;
 
 	OSA_QueHndl	*psend_que = NULL;
 
@@ -183,7 +185,7 @@ static Void *bits_send_fxn(Void * prm)
     ipcbit_process_st *pipcbit = (ipcbit_process_st *)prm;
 
     while(TRUE == pipcbit->run_status) {
-        OSA_waitMsecs(REACH_SEND_FXN_WAIT_USECOND);
+    		OSA_waitMsecs(REACH_SEND_FXN_WAIT_USECOND);
 		bits_que_empty_bitbufs(pipcbit);
 		bits_send_full_bitbufs(pipcbit);
     }

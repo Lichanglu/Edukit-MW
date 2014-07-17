@@ -647,7 +647,7 @@ Int32 CaptureLink_drvCreateInst(CaptureLink_Obj * pObj, UInt16 instId)
 		}else{
 	        	if(Vps_platformTI816xGetCpuRev() > VPS_PLATFORM_CPU_REV_1_1)
 			{
-				#if 1
+				#if 0
 				pVipCreateArgs->videoCaptureMode = 
 					VPS_CAPT_VIDEO_CAPTURE_MODE_SINGLE_CH_NON_MUX_DISCRETE_SYNC_ACTVID_VSYNC;
 				#else
@@ -1526,6 +1526,7 @@ Int32 CaptureLink_drvProcessData(CaptureLink_Obj * pObj)
             for (frameId = 0; frameId < frameList.numFrames; frameId++)
             {
                 pFrame = frameList.frames[frameId];
+		  Vps_printf("Capture OK!\n");
 	//			Vps_printf("****capture,pFrame->channelNum =%d=frameList.numFrames=%d=frameList.numFrames=%d\n ",pFrame->channelNum,frameList.numFrames,frameList.numFrames);
 
                 CaptureLink_setFrameWallTime(pObj,pFrame);
@@ -1549,7 +1550,7 @@ Int32 CaptureLink_drvProcessData(CaptureLink_Obj * pObj)
 
 				pVidStatus = &pInst->vidDecCurStatus[queChId];
 
-				//Vps_printf("pFrame->fid=%d,pVidStatus->isInterlaced =%d=num=%d=%d\n",pFrame->fid,pVidStatus->isInterlaced,pFrame->channelNum,FVID2_SF_PROGRESSIVE);
+		//	Vps_printf("pFrame->fid=%d,pVidStatus->isInterlaced =%d=num=%d=%d\n",pFrame->fid,pVidStatus->isInterlaced,pFrame->channelNum,FVID2_SF_PROGRESSIVE);
 
 				#if 1
 				//just for enc2000 test
@@ -1792,9 +1793,6 @@ Int32 CaptureLink_drvStart(CaptureLink_Obj * pObj)
 
     pObj->prevVideoDetectCheckTime = pObj->prevTime =
             pObj->startTime = Utils_getCurTimeInMsec();
-#ifdef SYSTEM_DEBUG_CAPTURE
-		Vps_printf(" CAPTURE: numVipInst=%d !!!\n", pObj->createArgs.numVipInst);
-#endif
 
     for (instId = 0; instId < pObj->createArgs.numVipInst; instId++)
     {
@@ -1804,9 +1802,6 @@ Int32 CaptureLink_drvStart(CaptureLink_Obj * pObj)
         FVID2_start(pInstObj->captureVipHandle, NULL);
         pInstObj->captureStartTime = Avsync_getWallTime();
     }
-#ifdef SYSTEM_DEBUG_CAPTURE
-	Vps_printf(" %d: CAPTURE: start finish!\n");
-#endif
 
     return FVID2_SOK;
 }

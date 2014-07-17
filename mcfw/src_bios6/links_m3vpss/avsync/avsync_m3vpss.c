@@ -2075,6 +2075,63 @@ Int Avsync_vidQueFlush(AvsyncLink_VidQueObj *queObj,
      return status;
 }
 
+
+Int Avsync_vidQueFlush_lichl_skip(AvsyncLink_VidQueObj *queObj,
+                       FVID2_Frame **framePtr,
+                       FVID2_FrameList *freeFrameList)
+{
+     Int32 status = AVSYNC_S_OK;
+     FVID2_Frame *frame = NULL;
+	 Int32 i=0;
+
+    AVSYNC_CFG_MUTEX_ACQUIRE(queObj->displayID);
+     while (i < 2)//!Utils_queIsEmpty(&queObj->vidFrmQ))
+     {
+     	i++;
+         if (frame != NULL)
+         {
+             UTILS_assert(freeFrameList->numFrames <
+                          UTILS_ARRAYSIZE(freeFrameList->frames));
+             freeFrameList->frames[freeFrameList->numFrames] =
+                 frame;
+             freeFrameList->numFrames++;
+             frame = NULL;
+         }
+         status = Utils_queGet(&queObj->vidFrmQ,
+                               (Ptr *)&frame,
+                                1,
+                                ti_sysbios_BIOS_NO_WAIT);
+         UTILS_assert(status == 0);
+     }
+     *framePtr = frame;
+     /* handle case of updating firstVidPTS if frames
+      * are flushed .This enables to start with
+      * correct PTS value instead of stale PTS
+      * value when starting the player time
+      */
+     if (frame)
+     {
+         UTILS_assert(queObj->cfg != NULL);
+         if (queObj->cfg->avsyncEnable)
+         {
+            if  ((queObj->playerTime->firstFrmInSeqReceived)
+                 &&
+                 (queObj->playerTime->state  != AVSYNC_PLAYERTIME_STATE_RUNNING))
+            {
+                UInt64 pts;
+
+                pts = avsync_get_frame_pts(frame);
+                if (pts != AVSYNC_INVALID_PTS)
+                {
+                    avsync_set_player_time_firstvidpts(queObj->playerTime,pts);
+                }
+            }
+         }
+     }
+     AVSYNC_CFG_MUTEX_RELEASE(queObj->displayID);
+     return status;
+}
+
 UInt32 Avsync_vidQueGetQueLength(AvsyncLink_VidQueObj *queObj)
 {
     UInt32 queLen;

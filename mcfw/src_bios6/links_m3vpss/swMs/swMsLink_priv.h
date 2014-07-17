@@ -30,7 +30,7 @@
 
 #define SW_MS_SKIP_PROCESSING           (2)
 
-#define SW_MS_SKIP_INPUT_FRAMES_SC      (2)
+#define SW_MS_SKIP_INPUT_FRAMES_SC    (3)//  (2)
 #define SW_MS_SKIP_INPUT_FRAMES_DEI     (3)
 
 #define SW_MS_MAX_WIDTH_SUPPORTED       (1920)
@@ -41,8 +41,9 @@
 
 #define SW_MS_SCALING_INTERVAL_INVALID  (~0u)
 
-#define SW_MS_BLANK_FRAME_PIXEL_LUMA    (0x30)
+#define SW_MS_BLANK_FRAME_PIXEL_LUMA    (0x00)
 #define SW_MS_BLANK_FRAME_PIXEL_CHROMA  (0x80)
+
 
 #define SW_MS_GRID_FILL_PIXEL_LUMA    (0x10)
 #define SW_MS_GRID_FILL_PIXEL_CHROMA  (0x80)

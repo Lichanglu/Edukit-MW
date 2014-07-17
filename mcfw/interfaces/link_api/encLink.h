@@ -57,6 +57,7 @@
 /** \Enc command to print channel level statistics */
 #define ENC_LINK_CMD_PRINT_STATISTICS       (0x5010)
 #define ENC_LINK_CMD_PRINT_BUFFER_STATISTICS       (0x5011)
+#define ENC_LINK_CMD_RESET_SKIP_FRAME      (0x5013)
 
 
 /**
@@ -308,7 +309,8 @@ typedef struct EncLink_ChCreateParams
     Int32 numTemporalLayer;
     /**< Denotes the number of temporal layers that the encoder output bitstream will have.
      *   Default is the 1 for H.264 encoder link channels and is DONT CARE for both encoders */
-     
+     Int32 encLevel;
+    //H264 encode level   ***add by lichl **  
     EncLink_ChDynamicParams defaultDynamicParams;
 } EncLink_ChCreateParams;
 

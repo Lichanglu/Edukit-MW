@@ -51,6 +51,9 @@ Int32 enc_set_inputfps(Uint32 encId, Uint32 chId, Uint32 inputfps);
 
 Int32 enc_set_snapshot(Uint32 encId, Uint32 chId);
 
+Int32 enc_reset_skip_frame(Uint32 encId);
+
+
 
 #endif
 

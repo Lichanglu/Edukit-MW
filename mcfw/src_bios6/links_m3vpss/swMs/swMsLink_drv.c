@@ -91,9 +91,10 @@ Int32 SwMsLink_fillDataPattern(Utils_DmaChObj *swMsDmaChObj,
             blankFrameInfo[numTx].height = pFormat->height;
             blankFrameInfo[numTx].fillColorYUYV =
                                  UTILS_DMA_GENERATE_FILL_PATTERN(
-                                                    0x00,
-                                                    0x80,
-                                                    0x80);
+                                                    SW_MS_BLANK_FRAME_PIXEL_LUMA,
+                                                    SW_MS_BLANK_FRAME_PIXEL_CHROMA,
+                                                    SW_MS_BLANK_FRAME_PIXEL_CHROMA);
+
             blankFrameInfo[numTx].startX = 0;
             blankFrameInfo[numTx].startY = 0;
             #if SWMSLINK_DEBUG_BLANK_OUTPUT_BUFFER
@@ -349,9 +350,10 @@ Int32 SwMsLink_drvCheckBlankOutputBuffer(SwMsLink_Obj * pObj, FVID2_Frame *pFram
         blankFrameInfo[numTx].width = pObj->outFrameFormat.width;
         blankFrameInfo[numTx].height = pObj->outFrameFormat.height;
         blankFrameInfo[numTx].fillColorYUYV =
-                UTILS_DMA_GENERATE_FILL_PATTERN(SW_MS_BLANK_FRAME_PIXEL_LUMA ,
+        UTILS_DMA_GENERATE_FILL_PATTERN(SW_MS_BLANK_FRAME_PIXEL_LUMA ,
                                                 SW_MS_BLANK_FRAME_PIXEL_CHROMA,
                                                 SW_MS_BLANK_FRAME_PIXEL_CHROMA);
+
         blankFrameInfo[numTx].startX = 0;
         blankFrameInfo[numTx].startY = 0;
         #if SWMSLINK_DEBUG_BLANK_OUTPUT_BUFFER
@@ -982,9 +984,7 @@ Int32 SwMsLink_drvSetScCoeffs(SwMsLink_Obj * pObj, FVID2_Handle fvidHandle,
 
     if(curCoeffId>=VPS_SC_SET_MAX)
         curCoeffId = VPS_SC_US_SET;
-#if 0
-	curCoeffId=6;//add by lichl--->curCoeffId=UPSCALE
-#endif
+
     Vps_rprintf(" %d: %s    : Loading Co-effs (%s)x ... \n",
                 Utils_getCurTimeInMsec(), pObj->name, scCoeffName[curCoeffId]
             );
@@ -1093,7 +1093,11 @@ Int32 SwMsLink_drvSwitchLayout(SwMsLink_Obj * pObj,
     SwMsLink_updateLayoutParams(&pObj->layoutParams, pObj->outFrameFormat.pitch[0]);
 
     SwMsLink_drvGetTimerPeriod(pObj, layoutParams);
-    SwMsLink_drvClockPeriodReconfigure(pObj);
+  if(pObj->layoutParams.prev_outputFPS != pObj->layoutParams.outputFPS){
+  	  SwMsLink_drvClockPeriodReconfigure(pObj);
+	  pObj->layoutParams.prev_outputFPS = pObj->layoutParams.outputFPS;
+  }
+	Vps_printf("----------------\n");
 
     for (winId = 0; winId < pObj->layoutParams.numWin; winId++)
     {
@@ -1404,8 +1408,6 @@ Int32 SwMsLink_drvQueueInputFrames(SwMsLink_Obj * pObj,
     System_LinkInQueParams *pInQueParams;
 
     pInQueParams = &pObj->createArgs.inQueParams;
-	
-     Vps_printf(" SWMS: SwMsLink_drvQueueInputFrames: CH ID = (%d)\n", frame->channelNum);
 
     for (i = 0; i < frameList->numFrames; i++)
     {
@@ -1550,6 +1552,7 @@ Int32 SwMsLink_drvUpdateChCurrentInFrame(SwMsLink_Obj * pObj)
                 }
             }
             skipInputFrames = pObj->createArgs.maxInputQueLen;
+	//	Vps_printf("i will skip que skipInputFrames=%d=%d==%d\n",queCnt,skipInputFrames,Utils_getCurTimeInMsec());		
             if ((queCnt > skipInputFrames)
                 &&
                 (!(AVSYNC_VIDQUE_IS_SYNCH_ENABLED(&pObj->chObj[chIdx].inQue))))
@@ -1561,7 +1564,8 @@ Int32 SwMsLink_drvUpdateChCurrentInFrame(SwMsLink_Obj * pObj)
                 if(queCnt<pWinObj->framesAccMin)
                     pWinObj->framesAccMin = queCnt;
                 pWinObj->framesRecvCount    += queCnt;
-                Avsync_vidQueFlush(&pObj->chObj[chIdx].inQue,
+//		 Vps_printf("i will skip que queCnt=%d==%d\n",queCnt,Utils_getCurTimeInMsec());		
+                Avsync_vidQueFlush_lichl_skip(&pObj->chObj[chIdx].inQue,
                                    &frame,
                                    &pObj->freeFrameList);
                 pWinObj->framesDroppedCount += pObj->freeFrameList.numFrames -
@@ -1615,8 +1619,8 @@ Int32 SwMsLink_drvUpdateChCurrentInFrame(SwMsLink_Obj * pObj)
                     pWinObj->framesFidInvalidCount++;
 
                     /* incoming frame fid does not match required fid */
-                    SwMsLink_freeFrame(pInQueParams, &pObj->freeFrameList, frame);
-                    frame = NULL;
+                   SwMsLink_freeFrame(pInQueParams, &pObj->freeFrameList, frame);
+                   frame = NULL;
                 }
             }
             if (frame)
@@ -2536,7 +2540,7 @@ Int32 SwMsLink_drvMakeFrameLists(SwMsLink_Obj * pObj, FVID2_Frame * pOutFrame)
 
         pInFrame = NULL;
 
-        if(pWinInfo->channelNum == SYSTEM_SW_MS_INVALID_ID || pObj->switchLayout)
+        if(pWinInfo->channelNum == SYSTEM_SW_MS_INVALID_ID )//|| pObj->switchLayout)
         {
 
         }
@@ -2545,6 +2549,8 @@ Int32 SwMsLink_drvMakeFrameLists(SwMsLink_Obj * pObj, FVID2_Frame * pOutFrame)
             UTILS_assert(pWinInfo->channelNum < UTILS_ARRAYSIZE(pObj->chObj));
             pInFrame = pObj->chObj[pWinInfo->channelNum].pCurInFrame;
         }
+
+
         if (NULL == pInFrame)
         {
             pInFrame = &pWinObj->blankFrame;
@@ -2818,6 +2824,7 @@ Int32 SwMsLink_drvDoScaling(SwMsLink_Obj * pObj)
     FVID2_Frame *pOutFrame;
     FVID2_Frame *pDupedOutFrame;
     Int32 status;
+   Int32 InTime=0;
     UInt32 curTime = Utils_getCurTimeInMsec();
 
     if (pObj->skipProcessing)
@@ -2857,7 +2864,6 @@ Int32 SwMsLink_drvDoScaling(SwMsLink_Obj * pObj)
     pOutFrame->timeStamp = Utils_getCurTimeInMsec();
 
     SwMsLink_drvLock(pObj);
-
     SwMsLink_drvMakeFrameLists(pObj, pOutFrame);
 
     SwMsLink_DrvProcessFrames(pObj);

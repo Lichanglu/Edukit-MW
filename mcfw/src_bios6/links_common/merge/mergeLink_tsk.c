@@ -48,7 +48,6 @@ Int32 MergeLink_drvCreate(MergeLink_Obj * pObj, MergeLink_CreateParams * pPrm)
         status =
             System_linkGetInfo(pPrm->inQueParams[inQue].prevLinkId,
                                &pObj->inTskInfo[inQue]);
-	Vps_printf("inQue = %d,pPrm->inQueParams[inQue].prevLinkId=%d\n",inQue,pPrm->inQueParams[inQue].prevLinkId);
         UTILS_assert(status == FVID2_SOK);
         UTILS_assert(pPrm->inQueParams[inQue].prevLinkQueId <
                      pObj->inTskInfo[inQue].numQue);

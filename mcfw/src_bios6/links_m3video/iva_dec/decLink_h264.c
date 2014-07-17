@@ -392,8 +392,8 @@ Int32 Declink_h264DecodeFrameBatch(DecLink_Obj * pObj,
                     else
                     {
                     DECLINK_INTERNAL_ERROR_LOG(error, "ALGPROCESS FAILED:STATUS");
-                    Vps_printf ("outArgs->viddec3OutArgs.extendedError for channel %d Error: 0x%x,0x%x\n",
-                                 chId, outArgs->viddec3OutArgs.extendedError,IH264VDEC_ERR_PICSIZECHANGE);
+                    Vps_printf ("outArgs->viddec3OutArgs.extendedError for channel %d Error: 0x%x\n",
+                                 chId, outArgs->viddec3OutArgs.extendedError);
                     Vps_printf ("Sequence called number %d\n", pChObj->algObj.u.h264AlgIfObj.numProcessCalls);
                     }
                     #endif

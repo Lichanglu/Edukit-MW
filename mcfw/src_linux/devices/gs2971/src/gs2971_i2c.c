@@ -21,7 +21,6 @@ static int gGS2971_Vps = 0;
 static int gGS2971_CurStatus=-1;
 
 static int g_fpga_vesion = 0;
-//#define GS2971_DEBUG
 
 static Vps_Gs2971_hpv_vps gs2971_gLineNum[DEVICE_STD_REACH_LAST] = {
 	{"480I",		240,60,1587,720,240}, // 0-480ix60             
@@ -34,6 +33,8 @@ static Vps_Gs2971_hpv_vps gs2971_gLineNum[DEVICE_STD_REACH_LAST] = {
 	{"480P",		0xFFFF,0xFFFF,0xFFFF,0,0}, // 7-480px60             
 	{"576P",		0xFFFF,0xFFFF,0xFFFF,0,0},  // 8-576px50
 #if 1	
+	{"720P30",	750,30,2222,1280,720},  // 9-1280x720x60 
+	{"720P25",	750,25,2666,1280,720},  // 10-1280x720x50 
 	{"720P60",	750,60,1111,1280,720},  // 9-1280x720x60 
 	{"720P50",	750,50,1333,1280,720},  // 10-1280x720x50 
 	{"1080I60",	563,60,1481,1920,540},  // 11-1920x1080x60i                 
@@ -107,6 +108,8 @@ static Vps_Gs2971_sav_eav_vbi  gs2971_SavEavVbi[DEVICE_STD_REACH_LAST] = {
 	{"480P",		0x00,0x00,0x00,0x00},  			// 7-480px60     
 	{"576P",		0x00,0x00,0x00,0x00},			// 8-576px50   
 
+	{"720P30",	100,0x00,0x00,10},		// 9-1280x720x60
+	{"720P25",	100,0x00,0x00,10},  		// 10-1280x720x50           
 	{"720P60",	365,0x00,0x00,29},		// 9-1280x720x60
 	{"720P50",	695,0x00,0x00,29},  		// 10-1280x720x50           
 	{"1080I60",	275,0x00,0x00,21},		// 11-1920x1080x60i              	
@@ -168,6 +171,8 @@ static Vps_Gs2971_InMode ArgMode_GS2971[DEVICE_STD_REACH_LAST] = {
 	{"Revs",0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},  	// FVID2_STD_D1, /**< Interlaced, 720x240 per field NTSC, 720x288 per field PAL. */                                               
 	{"480P60",0x07,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 7-480px60     
 	{"576P50",0x00,0x21,0x5d,0xd0,0xE6,0x90,0xd0,0x02,0x58,0x32,0x00},	// 8-576px50   
+	{"720P30",0x0a,0x21,0x5F,0xd0,0xe6,0x80,0xd0,0x02,0x7f,0x2e,0xe0},	// 9-1280x720x60
+	{"720P25",0x2a,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 10-1280x720x50           
 	{"720P60",0x0a,0x21,0x5F,0xd0,0xe6,0x80,0xd0,0x02,0x7f,0x2e,0xe0},	// 9-1280x720x60
 	{"720P50",0x2a,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 10-1280x720x50           
 	{"1080I60",0x0c,0x21,0x5d,0x10,0x21,0x5d,0x10,0x05,0x21,0x5d,0x10},	// 11-1920x1080x60i              	
@@ -348,7 +353,7 @@ static Int32 Device_gs2971GetResolution(Device_Gs2971Obj *pObj)
 	}else{
 		gGS2971_Mode = inMode;
 	}
-#ifdef GS2971_DEBUG
+#if 0	
 	if(gGS2971_Mode != -1){
 		printf("###########################################\n");
 		printf("Get GS2971 Resolution!\n");
@@ -522,6 +527,8 @@ Int32 Device_gs2971GetVideoStatus ( Device_Gs2971Obj * pObj,
 		pStatus->isVideoDetect = TRUE;
 		pStatus->frameWidth = gs2971_gLineNum[gGS2971_Mode].width;
 		pStatus->frameHeight = gs2971_gLineNum[gGS2971_Mode].hight;
+		pStatus->isInterlaced = FALSE;
+		
 		if(gGS2971_Mode < DEVICE_STD_CIF)	
 			pStatus->isInterlaced = TRUE;
 		if(gGS2971_Mode >DEVICE_STD_720P_50 &&  gGS2971_Mode <DEVICE_STD_1080P_60)	
@@ -529,7 +536,6 @@ Int32 Device_gs2971GetVideoStatus ( Device_Gs2971Obj * pObj,
 	}else{
 		pStatus->isVideoDetect = FALSE;
 	}
-	
 	return status;
 }
 

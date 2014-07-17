@@ -240,7 +240,6 @@ Int32 IpcOutM3Link_create(IpcOutM3Link_Obj * pObj, IpcLink_CreateParams * pPrm)
 
     /* set number of input / output channels */
     pObj->numCh = pInQueInfo->numCh;
-    Vps_printf(" IPC_OUT_M3   : pObj->numCh=%d!!!\n", pObj->numCh);
 
 
 

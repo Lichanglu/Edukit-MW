@@ -53,11 +53,11 @@ Int32 SwMsLink_tskRun(SwMsLink_Obj * pObj, Utils_TskHndl * pTsk,
             case SW_MS_LINK_CMD_DO_SCALING:
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
 
-				flushCmds[0] = SYSTEM_CMD_NEW_DATA;
-				flushCmds[1] = SW_MS_LINK_CMD_DO_SCALING;
+		flushCmds[0] = SYSTEM_CMD_NEW_DATA;
+		flushCmds[1] = SW_MS_LINK_CMD_DO_SCALING;
                 Utils_tskFlushMsg(pTsk, flushCmds, 2);
 
-				SwMsLink_drvProcessData(pObj);
+		SwMsLink_drvProcessData(pObj);
                 SwMsLink_drvDoScaling(pObj);
                 break;
 
