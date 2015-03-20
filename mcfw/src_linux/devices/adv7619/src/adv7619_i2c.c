@@ -29,7 +29,7 @@ static int gAD7619_Mode=-1;
 static int gAD7619_TMDS = -1;
 static int gAD7619_Hpv = 0;
 static int gAD7619_Vps = 0;
-static int gAD7619_CurStatus=-1;
+//static int gAD7619_CurStatus=-1;
 static AD7619_INPUT gAD7619_InterFace = AD7619_INPUT_UNKNOW;
 
 static Vps_Adv7619_hpv_vps adv7619_gLineNum[DEVICE_STD_REACH_LAST] = {
@@ -91,7 +91,7 @@ static Vps_Adv7619_hpv_vps adv7619_gLineNum[DEVICE_STD_REACH_LAST] = {
 
 	{"Max",0xFFFF,0xFFFF,0,0} // FVID2_STD_MAX
 };
-
+#if 0
 static Vps_Adv7619_sav_eav_vbi  adv7619_SavEavVbi[DEVICE_STD_REACH_LAST] = {
 	{"480I",		0x00,0x00,0x00,0x00},  			// 0-480ix60                                                
 	{"576I",		0x00,0x00,0x00,0x00},  			// 1-576ix50     
@@ -149,6 +149,7 @@ static Vps_Adv7619_sav_eav_vbi  adv7619_SavEavVbi[DEVICE_STD_REACH_LAST] = {
 														//Used in display mode. */
 	{"Max",0x00,0x00,0x00,0x00} // FVID2_STD_MAX
 };
+#endif
 
 static Vps_Adv7619_InMode ArgMode_7619[DEVICE_STD_REACH_LAST] = {
 	{"480I",0x00,0x21,0x5d,0x10,0xe8,0x70,0xd0,0x01,0x7e,0x4e,0x20},  	// 0-480ix60                                                
@@ -426,17 +427,17 @@ static Int32 Device_adv7619GetInfo_D(Device_Adv7619Obj *pObj, ADV7619_SyncInfo *
 	unsigned int    	dwtemp5;
 	unsigned short    	pix_rep;
 	unsigned short   	w_deep_color_mode;
-	unsigned short    	wHsync_FrontPorch;
-	unsigned short    	wHsync_BackPorch;
-	unsigned short    	wHsync_PulseWidth;
-	unsigned short    	wFiled0_Vsync_FrontPorch;
-	unsigned short    	wFiled0_Vsync_BackPorch;
-	unsigned short    	wFiled0_Vsync_PulseWidth;
-	unsigned short    	wFiled1_Vsync_FrontPorch;
-	unsigned short    	wFiled1_Vsync_BackPorch;
-	unsigned short    	wFiled1_Vsync_PulseWidth;
+	//unsigned short    	wHsync_FrontPorch;
+	//unsigned short    	wHsync_BackPorch;
+	//unsigned short    	wHsync_PulseWidth;
+	//unsigned short    	wFiled0_Vsync_FrontPorch;
+	//unsigned short    	wFiled0_Vsync_BackPorch;
+	//unsigned short    	wFiled0_Vsync_PulseWidth;
+	//unsigned short    	wFiled1_Vsync_FrontPorch;
+	//unsigned short    	wFiled1_Vsync_BackPorch;
+	//unsigned short    	wFiled1_Vsync_PulseWidth;
 	unsigned char  	temp;
-	unsigned short 	width;
+	//unsigned short 	width;
 	unsigned short   	length;
 
 	temp = Device_adv7619_Read8_Hdmimap(pObj, 0x04);	
@@ -530,13 +531,13 @@ static Int32 Device_adv7619GetInfo_D(Device_Adv7619Obj *pObj, ADV7619_SyncInfo *
 	
 	return retVal;
 }
-
+#if 0
 static Int32 Device_adv7619GetInterface(Device_Adv7619Obj *pObj, int *tmds, AD7619_INPUT *InterFace)
 {
 	Int32 	retVal = 0;
 	return retVal;
 }
-
+#endif
 static Int32 Device_adv7619GetModeIndex(int hpv, int vps, int *index)
 {
 	Int32 	retVal = 0;
@@ -592,7 +593,7 @@ static Int32 Device_adv7619InitComm(Device_Adv7619Obj *pObj)
 	
 	return retVal;
 }
-
+#if 0
 static Int32 Device_adv7619DigitalInterFaceInit(Device_Adv7619Obj *pObj)
 {
 	Int32 	retVal = 0;
@@ -623,7 +624,7 @@ static Int32 Device_adv7619YPbPrInterFaceSetRes(Device_Adv7619Obj *pObj, int inM
 	Int32 	retVal = 0;
 	return retVal;
 }
-
+#endif
 static Int32 Device_adv7619Config(Device_Adv7619Obj *pObj, int inMode, int tmds, AD7619_INPUT InterFace)
 {
 	Int32 	retVal = 0;
@@ -741,7 +742,8 @@ static Int32 Device_adv7619GetResolution(Device_Adv7619Obj *pObj)
 	Int32           retVal = 0;
 	int 		inMode;
 	ADV7619_SyncInfo adv7619Infor;
-
+	
+	memset(&adv7619Infor,0,sizeof(adv7619Infor));
 	Device_adv7619GetInfo_D(pObj, &adv7619Infor);
 	gAD7619_Hpv = adv7619Infor.VTotPix;
 	gAD7619_Vps = adv7619Infor.VFreq;
@@ -805,19 +807,19 @@ Int32 Device_adv7619Reset ( Device_Adv7619Obj * pObj )
 	UInt8           regVal;
 
 	if(0){
-		Vps_printf("Before write ADV7619 IO Map 0xFF!\n");
+		OSA_printf("Before write ADV7619 IO Map 0xFF!\n");
 		retVal = Device_adv7619_Write8_Iomap(pObj,0xFF,0x80);
-		Vps_printf("After write ADV7619 IO Map 0xFF!\n");
+		OSA_printf("After write ADV7619 IO Map 0xFF!\n");
 		while(1){
 			Task_sleep(1000);
-			Vps_printf("Before Read ADV7619 IO Map 0xFF!\n");
+			OSA_printf("Before Read ADV7619 IO Map 0xFF!\n");
 			regVal = Device_adv7619_Read8_Iomap(pObj,0xFF);
-			Vps_printf("After Read ADV7619 IO Map 0xFF!\n");
+			OSA_printf("After Read ADV7619 IO Map 0xFF!\n");
 			if(!(regVal & 0x80)){
-				Vps_printf("ADV7619 Reset OK!\n");
+				OSA_printf("ADV7619 Reset OK!\n");
 				break;
 			}else{
-				Vps_printf("waiting ADV7619 Reset.......Reg 0xFF = 0x%x\n",regVal);
+				OSA_printf("waiting ADV7619 Reset.......Reg 0xFF = 0x%x\n",regVal);
 			}
 		}
 	}

@@ -13,7 +13,7 @@
 #include <mcfw/interfaces/link_api/nullLink.h>
 
 
-#define NULL_LINK_OBJ_MAX   (4)
+#define NULL_LINK_OBJ_MAX   (3)
 
 typedef struct {
     UInt32 tskId;

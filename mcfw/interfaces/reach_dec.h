@@ -21,9 +21,13 @@ Int32 dec_print_ivahd_statistics(Uint32 decId);
 
 Int32 dec_print_statistics(Uint32 decId);
 
+Int32 dec_print_buffer_statistics(Uint32 decId);
 
+Int32 dec_set_trickplayconfig(Uint32 decId, Uint32 chId, Uint32 inputfps, Uint32 targetfps);
 
+Int32 dec_disable_channel(Uint32 decId, Uint32 chId);
 
+Int32 dec_enable_channel(Uint32 decId, Uint32 chId);
 
 #endif
 

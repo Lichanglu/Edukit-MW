@@ -238,6 +238,7 @@ Int32 AlgLink_ScdalgProcess(AlgLink_ScdObj *pScdAlgLinkObj, UInt32 chId, AlgLink
     AlgLink_ScdchPrm * chPrm;
     AlgLink_ScdChObj * chObj;
     UInt32         blkIdx;
+	//System_FrameInfo *pInFrameInfo;
 
     /* Activate the Algorithm */
     DSKT2_activateAlg(gScratchId, (IALG_Handle)pScdAlgLinkObj->algHndl);
@@ -283,7 +284,7 @@ Int32 AlgLink_ScdalgProcess(AlgLink_ScdObj *pScdAlgLinkObj, UInt32 chId, AlgLink
     scdResult.blkResult = (SCD_blkChngMeta *)(scdResultBuff->blkResult);
 
     chanStatus = SCD_TI_process(pScdAlgLinkObj->algHndl, chanID, &scdResult);
-
+	chanStatus = SCD_NO_ERROR;
 
     /* Deactivate algorithm */
     DSKT2_deactivateAlg(gScratchId, (IALG_Handle)pScdAlgLinkObj->algHndl);
@@ -347,7 +348,10 @@ Int32 AlgLink_ScdalgProcess(AlgLink_ScdObj *pScdAlgLinkObj, UInt32 chId, AlgLink
                 monitoredBlk++;
                 threshold = MOTION_DETECTION_SENSITIVITY(ALG_LINK_SCD_BLK_WIDTH, blkHeight) +
                                   (MOTION_DETECTION_SENSITIVITY_STEP * (SCD_SENSITIVITY_MAX - blockConfig->sensitivity));
-
+#if 0
+		 if(scdResultBuff->blkResult[blkIdx].numPixelsChanged > 0)
+	  	 Vps_printf("===========blkIdx:%d,numPixelsChanged:%d\n",blkIdx,scdResultBuff->blkResult[blkIdx].numPixelsChanged);
+#endif
                 if(scdResultBuff->blkResult[blkIdx].numPixelsChanged > threshold)
                 {
                     numBlkChg++;
@@ -368,7 +372,7 @@ Int32 AlgLink_ScdalgProcess(AlgLink_ScdObj *pScdAlgLinkObj, UInt32 chId, AlgLink
                Vps_printf(" %d: SCD    : Motion Detected (chanID = %d),  !!!\n",
                       Utils_getCurTimeInMsec(), chanID );
 #endif
-               System_linkControl(SYSTEM_LINK_ID_HOST, VSYS_EVENT_MOTION_DETECT, scdResultBuff, sizeof(AlgLink_ScdResult), FALSE);
+               System_linkControl(SYSTEM_LINK_ID_HOST, VSYS_EVENT_MOTION_DETECT, scdResultBuff, sizeof(AlgLink_ScdResult), TRUE);
 
            }
         }
@@ -400,7 +404,7 @@ Int32 AlgLink_ScdalgProcess(AlgLink_ScdObj *pScdAlgLinkObj, UInt32 chId, AlgLink
                       Utils_getCurTimeInMsec(), chanID );
 #endif
 
-            System_linkControl(SYSTEM_LINK_ID_HOST, VSYS_EVENT_TAMPER_DETECT, &pChStatus, sizeof(AlgLink_ScdChStatus), FALSE);
+            System_linkControl(SYSTEM_LINK_ID_HOST, VSYS_EVENT_TAMPER_DETECT, &pChStatus, sizeof(AlgLink_ScdChStatus), TRUE);
         }
     }
 
@@ -413,12 +417,11 @@ Int32 AlgLink_ScdalgProcessData(AlgLink_ScdObj * pObj, FVID2_FrameList *frameLis
     FVID2_Frame *pFrame;
     Int32 chIdx, status;
     Int32 frameFound;
-    Bitstream_Buf *pOutBuf;
-    Bitstream_BufList outBitBufList;
+  //Bitstream_Buf *pOutBuf;
+  //Bitstream_BufList outBitBufList;
     System_FrameInfo *pInFrameInfo;
-
-    outBitBufList.numBufs = 0;
-    outBitBufList.appData = NULL;
+  //outBitBufList.numBufs = 0;
+  //outBitBufList.appData = NULL;
 
     AlgLink_ScdChObj *pChObj;
 
@@ -432,7 +435,6 @@ Int32 AlgLink_ScdalgProcessData(AlgLink_ScdObj * pObj, FVID2_FrameList *frameLis
             Bool doFrameDrop;
             pFrame = frameList->frames[frameId];
             //chIdx = pFrame->channelNum - pObj->createArgs.startChNoForSCD;
-
             frameFound = 0;
             for(chIdx = 0; chIdx < pObj->createArgs.numValidChForSCD; chIdx++)
             {
@@ -450,6 +452,8 @@ Int32 AlgLink_ScdalgProcessData(AlgLink_ScdObj * pObj, FVID2_FrameList *frameLis
 
             pChObj->inFrameRecvCount++;
             doFrameDrop = Utils_doSkipFrame(&pChObj->frameSkipCtx);
+
+			#if 0
             if(doFrameDrop == FALSE)
             {
                 pOutBuf = NULL;
@@ -463,30 +467,41 @@ Int32 AlgLink_ScdalgProcessData(AlgLink_ScdObj * pObj, FVID2_FrameList *frameLis
                    doFrameDrop = TRUE;
                 }
             }
+
+			#endif
+			
             if(doFrameDrop == FALSE)
             {
                 pObj->chParams[chIdx].curFrame = pFrame->addr[0][0];
-
                 pInFrameInfo = (System_FrameInfo *) pFrame->appData;
 
+				#if 0
                 pOutBuf->lowerTimeStamp = (UInt32)(pInFrameInfo->ts64 & 0xFFFFFFFF);
                 pOutBuf->upperTimeStamp = (UInt32)(pInFrameInfo->ts64 >> 32);
                 pOutBuf->channelNum = pFrame->channelNum;
                 pOutBuf->fillLength = sizeof(AlgLink_ScdResult);
                 pOutBuf->frameWidth = pObj->chParams[chIdx].width;
                 pOutBuf->frameHeight = pObj->chParams[chIdx].height;
+				#endif
 
+				pObj->chParams[chIdx].width = pInFrameInfo->rtChInfo.width;
+				pObj->chParams[chIdx].height= pInFrameInfo->rtChInfo.height;
+				pObj->chParams[chIdx].stride= pInFrameInfo->rtChInfo.pitch[0];
+				
                 curTime = Utils_getCurTimeInMsec();
 
-//                AlgLink_ScdalgProcess(pObj, pFrame->channelNum, (AlgLink_ScdResult *) pOutBuf->addr);
-                AlgLink_ScdalgProcess(pObj, chIdx, (AlgLink_ScdResult *) pOutBuf->addr);
-                Cache_wb(pOutBuf->addr, sizeof(AlgLink_ScdResult), Cache_Type_ALL,TRUE);
-                pObj->chParams[chIdx].chBlkConfigUpdate = FALSE;
+				AlgLink_ScdResult  ScdResult = {0};
+				AlgLink_ScdalgProcess(pObj, chIdx, (AlgLink_ScdResult *) &ScdResult);
+                //AlgLink_ScdalgProcess(pObj, chIdx, (AlgLink_ScdResult *) pOutBuf->addr);
+			
+				//Cache_wb(pFrame->addr[0][0],pInFrameInfo->rtChInfo.pitch[0]*pObj->chParams[chIdx].height, Cache_Type_ALL,TRUE);
+				pObj->chParams[chIdx].chBlkConfigUpdate = FALSE;
 
                 pChObj->inFrameProcessTime += (Utils_getCurTimeInMsec() - curTime);
                 pChObj->inFrameProcessCount++;
-                outBitBufList.bufs[outBitBufList.numBufs] = pOutBuf;
-                outBitBufList.numBufs++;
+
+				//outBitBufList.bufs[outBitBufList.numBufs] = pOutBuf;
+                //outBitBufList.numBufs++;
 
             }
             else
@@ -497,18 +512,25 @@ Int32 AlgLink_ScdalgProcessData(AlgLink_ScdObj * pObj, FVID2_FrameList *frameLis
         }
     }
 
+	#if 0
     if (outBitBufList.numBufs)
     {
-        status = Utils_bitbufPutFull(bufOutQue,
-                                     &outBitBufList);
+		#if 0
+        status = Utils_bitbufPutFull(bufOutQue,&outBitBufList);
         UTILS_assert(status == FVID2_SOK);
+        status = FVID2_SOK;
+		#endif
+
+		status = Utils_bitbufPutEmpty(bufOutQue, &outBitBufList);
+		UTILS_assert(status == FVID2_SOK);
         status = FVID2_SOK;
     }
     else
     {
         status = FVID2_EFAIL;
     }
-
+	#endif
+	status = FVID2_SOK;
     return status;
 }
 

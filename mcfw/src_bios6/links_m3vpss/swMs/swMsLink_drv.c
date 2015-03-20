@@ -1080,11 +1080,12 @@ Int32 SwMsLink_drvSwitchLayout(SwMsLink_Obj * pObj,
 
     pObj->switchLayout = TRUE;
 
+	//Ë¢ÆÁ
     if(layoutParams->onlyCh2WinMapChanged == FALSE)
     {
           SwMsLink_drvResetStatistics(pObj);
-
-          pObj->skipProcessing = SW_MS_SKIP_PROCESSING;
+	//²»´¦Àískip
+//          pObj->skipProcessing = SW_MS_SKIP_PROCESSING;
           SwMsLink_drvSetBlankOutputFlag(pObj);
     }
 
@@ -1360,6 +1361,8 @@ Int32 SwMsLink_drvCreateChannelObj(SwMsLink_Obj * pObj)
         UTILS_assert(status ==0);
         pObj->chObj[i].pCurInFrame = NULL;
         pObj->chObj[i].isPlaybackChannel = FALSE;
+        pObj->chObj[i].chRtInInfoUpdate   = FALSE;
+	 pObj->chObj[i].chRtInfoUpdate      = FALSE;
     }
     return status;
 }
@@ -1434,6 +1437,7 @@ Int32 SwMsLink_drvQueueInputFrames(SwMsLink_Obj * pObj,
             pObj->chObj[frame->channelNum].isPlaybackChannel =
                 SwMsLink_isPlaybackChannel(frame);
         }
+		
         status = Avsync_vidQuePut(&pObj->chObj[frame->channelNum].inQue,
                               frame);
         UTILS_assert(status == 0);
@@ -2628,7 +2632,7 @@ Int32 SwMsLink_drvMakeFrameLists(SwMsLink_Obj * pObj, FVID2_Frame * pOutFrame)
         pFrameInfo = (System_FrameInfo *) pInFrame->appData;
         if (pFrameInfo != NULL)
         {
-            if (pFrameInfo->rtChInfoUpdate == TRUE)
+            if ((pFrameInfo->rtChInfoUpdate == TRUE) && (pWinInfo->channelNum < pObj->inQueInfo.numCh) && (FALSE == pObj->chObj[pWinInfo->channelNum].chRtInInfoUpdate))
             {
                 UTILS_assert(pInFrame->channelNum<SYSTEM_SW_MS_MAX_CH_ID);
 
@@ -2677,7 +2681,12 @@ Int32 SwMsLink_drvMakeFrameLists(SwMsLink_Obj * pObj, FVID2_Frame * pOutFrame)
                 pFrameInfo->rtChInfoUpdate = FALSE;
             }
         }
-        pInFrame->channelNum = winId - pDrvObj->startWin;
+	if((pWinInfo->channelNum < pObj->inQueInfo.numCh) && (TRUE == pObj->chObj[pWinInfo->channelNum].chRtInfoUpdate))
+	{
+		rtParamUpdatePerFrame = TRUE;
+		pObj->chObj[pWinInfo->channelNum].chRtInfoUpdate = FALSE;
+	}
+        //pInFrame->channelNum = winId - pDrvObj->startWin;
         pInFrame->perFrameCfg = NULL;
         pWinObj->curOutFrame.perFrameCfg = NULL;
 
@@ -2712,7 +2721,7 @@ Int32 SwMsLink_drvMakeFrameLists(SwMsLink_Obj * pObj, FVID2_Frame * pOutFrame)
     if (pObj->rtParamUpdate == TRUE)
     {
         Vps_printf(" SWMS: *** UPDATING RT Params ***\n");
-        pObj->layoutParams.onlyCh2WinMapChanged = TRUE;
+        pObj->layoutParams.onlyCh2WinMapChanged = FALSE;
         SwMsLink_drvSwitchLayout(pObj, &pObj->layoutParams, TRUE);
     }
     pObj->rtParamUpdate = FALSE;
@@ -2824,7 +2833,7 @@ Int32 SwMsLink_drvDoScaling(SwMsLink_Obj * pObj)
     FVID2_Frame *pOutFrame;
     FVID2_Frame *pDupedOutFrame;
     Int32 status;
-   Int32 InTime=0;
+//   Int32 InTime=0;
     UInt32 curTime = Utils_getCurTimeInMsec();
 
     if (pObj->skipProcessing)
@@ -3058,6 +3067,40 @@ Int32 SwMsLink_drvGetTimerPeriod(SwMsLink_Obj * pObj,
            //   (1000/(layoutParams->outputFPS));
     }
     return FVID2_SOK;
+}
+
+Int32 SwMsLink_drvSetInChInfo(SwMsLink_Obj * pObj, SwMsLink_InChInfo *pchinfo)
+{
+	System_LinkChInfo *rtChInfo;
+
+	if(pchinfo->chid < pObj->inQueInfo.numCh){
+		pObj->chObj[pchinfo->chid].chRtInfoUpdate = TRUE;
+		pObj->chObj[pchinfo->chid].chRtInInfoUpdate = TRUE;
+		rtChInfo = &pObj->rtChannelInfo[pchinfo->chid];
+		rtChInfo->startX = pchinfo->chinfo.startX;
+		rtChInfo->startY = pchinfo->chinfo.startY;
+		rtChInfo->width = pchinfo->chinfo.width;
+		rtChInfo->height = pchinfo->chinfo.height;
+		rtChInfo->pitch[0]= pchinfo->chinfo.pitch[0];
+		rtChInfo->pitch[1] = pchinfo->chinfo.pitch[1];
+		Vps_printf("[SwMsLink_drvSetInChInfo] chid:[%d] chRtInInfoUpdate:%d\n",
+					pchinfo->chid,
+					pObj->chObj[pchinfo->chid].chRtInInfoUpdate);
+	}
+
+	return FVID2_SOK;
+}
+
+Int32 SwMsLink_drvSetAutoGetInChInfo(SwMsLink_Obj * pObj, Int32 chId)
+{
+	if(chId >= 0 && chId < pObj->inQueInfo.numCh){
+		pObj->chObj[chId].chRtInInfoUpdate = FALSE;
+		Vps_printf("[SwMsLink_drvSetAutoGetInChInfo] chid:[%d] chRtInInfoUpdate:%d\n",
+					chId,
+					pObj->chObj[chId].chRtInInfoUpdate);
+	}
+
+	return FVID2_SOK;
 }
 
 Int32 SwMsLink_printBufferStatus (SwMsLink_Obj * pObj)

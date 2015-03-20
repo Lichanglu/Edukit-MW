@@ -9,6 +9,8 @@
 #include "system_priv_ipc.h"
 #include <ti/psp/devices/vps_device.h>
 #include <ti/psp/platforms/vps_platform.h>
+#include "mcfw/src_bios6/version/build_info.h"
+#include "mcfw/src_bios6/version/git_version.h"
 #if defined(TI816X_EVM) || defined(TI8107_EVM) || defined(TI8107_DVR)
 #include <ti/psp/devices/vps_thsfilters.h>
 #endif
@@ -75,6 +77,8 @@ Int32 System_initCommon()
     Vps_printf(" %d: SYSTEM  : System Common Init in progress !!!\n",
                Utils_getCurTimeInMsec());
 #endif
+
+    Vps_printf("mcfw bios6 build at [%s],the git version is [%s]\n", g_make_build_date, _VERSION);
 
     Utils_prfInit();
 

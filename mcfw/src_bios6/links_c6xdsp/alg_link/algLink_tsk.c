@@ -12,7 +12,7 @@
 UInt8 gAlgLink_tskStack[ALG_LINK_OBJ_MAX][ALG_LINK_TSK_STACK_SIZE];
 
 AlgLink_Obj gAlgLink_obj[ALG_LINK_OBJ_MAX];
-
+UInt32 gAlgLinkRunCount[ALG_LINK_OBJ_MAX];
 
 Void AlgLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
 {
@@ -21,6 +21,7 @@ Void AlgLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
     Int32 status;
     AlgLink_Obj *pObj;
     UInt32 flushCmds[4];
+    UInt8 objId = 0;
 
     pObj = (AlgLink_Obj *) pTsk->appData;
 
@@ -53,7 +54,12 @@ Void AlgLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
 
     done = FALSE;
     ackMsg = FALSE;
-
+    objId = pObj->linkId - SYSTEM_LINK_ID_ALG_0;
+    if(objId >= ALG_LINK_OBJ_MAX)
+   {
+   	objId = ALG_LINK_OBJ_MAX - 1;
+   }
+    gAlgLinkRunCount[objId] = 0;
     while (!done)
     {
         status = Utils_tskRecvMsg(pTsk, &pMsg, BIOS_WAIT_FOREVER);
@@ -70,6 +76,7 @@ Void AlgLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
                   Utils_tskFlushMsg(pTsk, flushCmds, 1);
 
                   AlgLink_algProcessData(pObj);
+		    gAlgLinkRunCount[objId]++;
                   break;
 
             case ALG_LINK_OSD_CMD_SET_CHANNEL_WIN_PRM:

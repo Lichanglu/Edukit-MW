@@ -428,6 +428,7 @@ Int32 DeiLink_drvCreateChObj(DeiLink_Obj * pObj, UInt32 chId)
             pChObj->chRtOutInfoUpdateForced[outId] = FALSE;
             pChObj->chRtOutInfoUpdate[outId] = FALSE;
             pChObj->chRtOutInfoUpdateDropCnt = 0;
+	     pChObj->chRtInInfoUpdate[outId] = FALSE;
 
             pChObj->vipRtOutFrmPrm[outId].width = pOutChInfo->width;
             pChObj->vipRtOutFrmPrm[outId].height = pOutChInfo->height;
@@ -877,6 +878,12 @@ Int32 DeiLink_drvCreate(DeiLink_Obj * pObj, DeiLink_CreateParams * pPrm)
 	pObj->inQueInfo.chInfo[0].pitch[0] = 1920;
 	pObj->inQueInfo.chInfo[0].pitch[1] = 1920;
 	pObj->inQueInfo.chInfo[0].scanFormat = 0;
+
+	if(pObj->inQueInfo.chInfo[1].height > 1200)
+	{
+		pObj->inQueInfo.chInfo[1].height = 1200;
+		pObj->inQueInfo.chInfo[1].scanFormat = 1;
+	}
 	
 
 #ifndef SYSTEM_USE_TILER
@@ -1355,83 +1362,112 @@ Int32 DeiLink_drvMakeFrameLists(DeiLink_Obj * pObj,
 
                     pFrameInfo = (System_FrameInfo *) pOutFrame->appData;
                     UTILS_assert(pFrameInfo != NULL);
+
+			if(pChObj->chRtInInfoUpdate[outId] == FALSE)
+			{
+				if(pInFrameInfo->rtChInfo.scanFormat == FVID2_SF_INTERLACED){	
+					if(pChObj->scCropConfig[outId].cropStartY != pInFrameInfo->rtChInfo.startY*2)
+					{
+						pChObj->scCropConfig[outId].cropStartY = pInFrameInfo->rtChInfo.startY*2;
+						pChObj->chRtOutInfoUpdateForced[outId] = TRUE;
+					}
+
+					if(pChObj->scCropConfig[outId].cropHeight != pInFrameInfo->rtChInfo.height*2)
+					{
+						pChObj->scCropConfig[outId].cropHeight = pInFrameInfo->rtChInfo.height*2;
+						pChObj->chRtOutInfoUpdateForced[outId] = TRUE;
+					}
+				}
+				else {
+					if(pChObj->scCropConfig[outId].cropStartY != pInFrameInfo->rtChInfo.startY)
+					{
+						pChObj->scCropConfig[outId].cropStartY = pInFrameInfo->rtChInfo.startY;
+						pChObj->chRtOutInfoUpdateForced[outId] = TRUE;
+					}
+
+					if(pChObj->scCropConfig[outId].cropHeight != pInFrameInfo->rtChInfo.height)
+					{
+						pChObj->scCropConfig[outId].cropHeight = pInFrameInfo->rtChInfo.height;
+						pChObj->chRtOutInfoUpdateForced[outId] = TRUE;
+					}
+				}
+
+				if(pChObj->scCropConfig[outId].cropWidth  != pInFrameInfo->rtChInfo.width)
+				{
+					pChObj->scCropConfig[outId].cropWidth  = pInFrameInfo->rtChInfo.width;
+					pChObj->chRtOutInfoUpdateForced[outId] = TRUE;
+				}
+
+				if(pChObj->scCropConfig[outId].cropStartX != pInFrameInfo->rtChInfo.startX)
+				{
+					pChObj->scCropConfig[outId].cropStartX = pInFrameInfo->rtChInfo.startX;
+					pChObj->chRtOutInfoUpdateForced[outId] = TRUE;
+				}
+			}
+			
                     if ((pChObj->chRtOutInfoUpdateForced[outId] == TRUE) ||
                         (pChObj->chRtOutInfoUpdate[outId] == TRUE))
                     {
-                        pInFrame->perFrameCfg = &pChObj->deiRtPrm;
-                        pChObj->deiRtPrm.vipOutFrmPrms =
-                                         &pChObj->vipRtOutFrmPrm[outId];
-                        pChObj->deiRtPrm.vipScCropCfg =
-                                         &pChObj->scCropConfig[outId];
-                        pChObj->chRtOutInfoUpdateForced[outId] = FALSE;
-                        pChObj->chRtOutInfoUpdate[outId] = FALSE;
+				pInFrame->perFrameCfg = &pChObj->deiRtPrm;
+				pChObj->deiRtPrm.vipOutFrmPrms =
+				                 &pChObj->vipRtOutFrmPrm[outId];
+				pChObj->deiRtPrm.vipScCropCfg =
+				                 &pChObj->scCropConfig[outId];
+				pChObj->chRtOutInfoUpdateForced[outId] = FALSE;
+				pChObj->chRtOutInfoUpdate[outId] = FALSE;
+
+				Vps_printf("pInFrameInfo:startX:%d,startY:%d,width:%d,height:%d,scanFormat:%d\n",
+					pChObj->scCropConfig[outId].cropStartX,
+					pChObj->scCropConfig[outId].cropStartY ,
+					pChObj->scCropConfig[outId].cropWidth,
+					pChObj->scCropConfig[outId].cropHeight,
+					pInFrameInfo->rtChInfo.scanFormat);
 #if 1						
+				if(pChObj->chRtInInfoUpdate[outId] == TRUE)
+				{
+					pChObj->deiHqCfg.bypass = FALSE;
+					pChObj->deiCfg.bypass = FALSE;
+					pChObj->scCfg[outId].bypass = TRUE;
 
-					//	Vps_printf("pChObj->deiRtOutFrmPrm[%d].width = %d height = %d %d %d %d",outId,\
-					//	pChObj->vipRtOutFrmPrm[outId].width,pChObj->vipRtOutFrmPrm[outId].height,\
-					//		pChObj->vipRtOutFrmPrm[outId].pitch[0],pInFrameInfo->rtChInfo.scanFormat,FVID2_SF_INTERLACED);
-
+					pChObj->scCropConfig[outId].cropStartY = pChObj->rtChannelInfo.startY;
+					pChObj->scCropConfig[outId].cropHeight = pChObj->rtChannelInfo.height;
+					pChObj->scCropConfig[outId].cropWidth  = pChObj->rtChannelInfo.width;
+					pChObj->scCropConfig[outId].cropStartX = pChObj->rtChannelInfo.startX;
+				}
+				else
+				{
 						if(pInFrameInfo->rtChInfo.scanFormat == FVID2_SF_INTERLACED){						
 							pChObj->deiHqCfg.bypass = TRUE;
 							pChObj->deiCfg.bypass = TRUE;
 							pChObj->scCfg[outId].bypass = FALSE;
-							
-							pChObj->scCropConfig[outId].cropStartY = pInFrameInfo->rtChInfo.startY*2;
-							pChObj->scCropConfig[outId].cropHeight = pInFrameInfo->rtChInfo.height*2;
-
-							pChObj->scCropConfig[outId].cropWidth  = pInFrameInfo->rtChInfo.width;
-							pChObj->scCropConfig[outId].cropStartX = pInFrameInfo->rtChInfo.startX;
-//
-							#if 0
-							pFrameInfo->rtChInfo.width = 1920;
-		                    pFrameInfo->rtChInfo.height = 1080;
-		                    pFrameInfo->rtChInfo.pitch[0] = 1920;
- 		                    pFrameInfo->rtChInfo.pitch[1] = 1920;
-		                    pFrameInfo->rtChInfoUpdate = TRUE;
-							#else
-							
-							pFrameInfo->rtChInfo.width =
-                                pChObj->vipRtOutFrmPrm[outId].width;
-		                    pFrameInfo->rtChInfo.height =
-		                                pChObj->vipRtOutFrmPrm[outId].height;
-		                    pFrameInfo->rtChInfo.pitch[0] =
-		                                pChObj->vipRtOutFrmPrm[outId].pitch[0];
-		                    pFrameInfo->rtChInfo.pitch[1] =
-		                                pChObj->vipRtOutFrmPrm[outId].pitch[1];
-		                    pFrameInfo->rtChInfoUpdate = TRUE;
-							#endif
 						}
 						else {
 							pChObj->deiHqCfg.bypass = FALSE;
 							pChObj->deiCfg.bypass = FALSE;
 							pChObj->scCfg[outId].bypass = TRUE;
-							
-							pChObj->scCropConfig[outId].cropStartY = pInFrameInfo->rtChInfo.startY;
-							pChObj->scCropConfig[outId].cropHeight = pInFrameInfo->rtChInfo.height;
-							pChObj->scCropConfig[outId].cropWidth  = pInFrameInfo->rtChInfo.width;
-							pChObj->scCropConfig[outId].cropStartX = pInFrameInfo->rtChInfo.startX;
-							
-							pFrameInfo->rtChInfo.width =
-                                pChObj->vipRtOutFrmPrm[outId].width;
-		                    pFrameInfo->rtChInfo.height =
-		                                pChObj->vipRtOutFrmPrm[outId].height;
-		                    pFrameInfo->rtChInfo.pitch[0] =
-		                                pChObj->vipRtOutFrmPrm[outId].pitch[0];
-		                    pFrameInfo->rtChInfo.pitch[1] =
-		                                pChObj->vipRtOutFrmPrm[outId].pitch[1];
-		                    pFrameInfo->rtChInfoUpdate = TRUE;
 						}
-						pChObj->deiRtPrm.deiRtCfg->resetDei = TRUE;
+
+
+				}
+				pFrameInfo->rtChInfo.width =
+				pChObj->vipRtOutFrmPrm[outId].width;
+				pFrameInfo->rtChInfo.height =
+				    pChObj->vipRtOutFrmPrm[outId].height;
+				pFrameInfo->rtChInfo.pitch[0] =
+				    pChObj->vipRtOutFrmPrm[outId].pitch[0];
+				pFrameInfo->rtChInfo.pitch[1] =
+				    pChObj->vipRtOutFrmPrm[outId].pitch[1];
+				pFrameInfo->rtChInfoUpdate = TRUE;
+				pChObj->deiRtPrm.deiRtCfg->resetDei = TRUE;
 #endif
+				//Vps_printf("pFrameInfo w %d h %d p %d %d\n",pFrameInfo->rtChInfo.width,pFrameInfo->rtChInfo.height,pFrameInfo->rtChInfo.pitch[0],pInFrameInfo->rtChInfo.scanFormat);
                     }
 
-					//Vps_printf("pFrameInfo w %d h %d p %d %d\n",pFrameInfo->rtChInfo.width,pFrameInfo->rtChInfo.height,pFrameInfo->rtChInfo.pitch[0],pInFrameInfo->rtChInfo.scanFormat);
                     if(repeatFld)
                     {
                         pInFrame->perFrameCfg = &pChObj->deiRtPrm;
                         pChObj->deiRtPrm.deiRtCfg = &pChObj->deiRtCfg;
                     }
-#if 1
                     pFrameInfo->rtChInfo.width =
                                 pChObj->vipRtOutFrmPrm[outId].width;
                     pFrameInfo->rtChInfo.height =
@@ -1441,7 +1477,7 @@ Int32 DeiLink_drvMakeFrameLists(DeiLink_Obj * pObj,
                     pFrameInfo->rtChInfo.pitch[1] =
                                 pChObj->vipRtOutFrmPrm[outId].pitch[1];
                     pFrameInfo->rtChInfoUpdate = TRUE;
-#endif
+
                     pFrameInfo->ts64  = pInFrameInfo->ts64;
                 }
 
@@ -2177,6 +2213,7 @@ Int32 DeiLink_drvSetChDynamicOutputRes(DeiLink_Obj * pObj,
         pChObj->deiRtOutFrmPrm[outId].height   = params->height;
         pChObj->deiRtOutFrmPrm[outId].pitch[0] = params->pitch[0];
         pChObj->deiRtOutFrmPrm[outId].pitch[1] = params->pitch[1];
+	Vps_printf("========outId:%d,chId:%d,width:%d,height:%d\n",outId,chId,params->width,params->height);
     }
 
 
@@ -2316,4 +2353,28 @@ Int32 DeiLink_printBufferStatus(DeiLink_Obj * pObj)
     }
     return 0;
 }
+
+Int32 DeiLink_drvSetInChInfo(DeiLink_Obj * pObj, DeiLink_InChInfo *pchinfo)
+{
+	System_LinkChInfo *rtChInfo;
+
+	if(pchinfo->chid < pObj->inQueInfo.numCh){
+		pObj->chObj[pchinfo->chid].chRtOutInfoUpdateForced[DEI_LINK_OUT_QUE_VIP_SC] = TRUE;
+		pObj->chObj[pchinfo->chid].chRtInInfoUpdate[DEI_LINK_OUT_QUE_VIP_SC] = TRUE;
+		rtChInfo = &pObj->chObj[pchinfo->chid].rtChannelInfo;
+		rtChInfo->startX = pchinfo->chinfo.startX;
+		rtChInfo->startY = pchinfo->chinfo.startY;
+		rtChInfo->width = pchinfo->chinfo.width;
+		rtChInfo->height = pchinfo->chinfo.height;
+		rtChInfo->pitch[0]= pchinfo->chinfo.pitch[0];
+		rtChInfo->pitch[1] = pchinfo->chinfo.pitch[1];
+		Vps_printf("[DeiLink_drvSetInChInfo] chid:[%d] chRtInInfoUpdate:%d\n",
+					pchinfo->chid,
+					pObj->chObj[pchinfo->chid].chRtInInfoUpdate[DEI_LINK_OUT_QUE_VIP_SC]);
+	}
+
+	return FVID2_SOK;
+}
+
+
 

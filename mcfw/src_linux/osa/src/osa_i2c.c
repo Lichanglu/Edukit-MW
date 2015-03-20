@@ -7,44 +7,46 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+static int set_slave_addr(int file, int address, int force);
+
 //#define OSA_I2C_DEBUG
-static int gi2cFd; 
+static int gi2cFd = -1; 
 
 int OSA_i2cCreate(Uint8 instId)
 {
-    char deviceName[20];
-    int status = 0;
+	char deviceName[20];
+	int status = 0;
 
-    sprintf(deviceName, "/dev/i2c-%d", instId);
+	sprintf(deviceName, "/dev/i2c-%d", instId);
 
-    gi2cFd = open(deviceName, O_RDWR);
-    if(gi2cFd<0)
-        return OSA_EFAIL;
-	
-    set_slave_addr(gi2cFd, 0x3C , 0);
+	gi2cFd = open(deviceName, O_RDWR);
+	if(gi2cFd<0)
+		return OSA_EFAIL;
 
-    return status;
+	set_slave_addr(gi2cFd, 0x3C , 0);
+
+	return status;
 }
 
 int OSA_i2cDelete(void)
 {	
 	close(gi2cFd);
 	gi2cFd=-1;
-    return -1;
+	return -1;
 }
 
 int OSA_i2cOpen(OSA_I2cHndl *hndl, Uint8 instId)
 {
-    char deviceName[20];
-    int status = 0;
+	char deviceName[20];
+	int status = 0;
 
-    sprintf(deviceName, "/dev/i2c-%d", instId);
+	sprintf(deviceName, "/dev/i2c-%d", instId);
 
-    hndl->fd = open(deviceName, O_RDWR);
-    if(hndl->fd<0)
-        return OSA_EFAIL;
+	hndl->fd = open(deviceName, O_RDWR);
+	if(hndl->fd<0)
+		return OSA_EFAIL;
 
-    return status;
+	return status;
 }
 
 int OSA_i2cRead8(OSA_I2cHndl *hndl, Uint16 devAddr, Uint8 *reg, Uint8 *value, Uint32 count)
@@ -164,12 +166,12 @@ static inline __s32 i2c_smbus_access(int file, char read_write, __u8 command,
 	return ioctl(file,I2C_SMBUS,&args);
 }
 
-int set_slave_addr(int file, int address, int force)
+static int set_slave_addr(int file, int address, int force)
 {
 	/* With force, let the user read from/write to the registers
 	   even when a driver is also running */
 	if (ioctl(file, force ? I2C_SLAVE_FORCE : I2C_SLAVE, address) < 0) {
-		printf("Error: Could not set address to 0x%02x: %s\n",address);
+		printf("Error: Could not set address to 0x%02x\n",address);
 		return -1;
 	}
 
@@ -222,11 +224,13 @@ int OSA_i2cRead16(OSA_I2cHndl *hndl, Uint16 devAddr, Uint8 *reg, Uint8 *value, U
 #else
 	union i2c_smbus_data data;
 	unsigned char command;
-	int ret = 0;
+//	int ret = 0;
 
+	set_slave_addr(hndl->fd, devAddr, 0);
+	
 	command = *reg;
 
-	if (i2c_smbus_access(gi2cFd, I2C_SMBUS_READ, command,
+	if (i2c_smbus_access(hndl->fd, I2C_SMBUS_READ, command,
 	                     I2C_SMBUS_WORD_DATA,&data)){
 		return -1;
 	}
@@ -298,10 +302,12 @@ int OSA_i2cWrite16(OSA_I2cHndl *hndl, Uint16 devAddr,  Uint8 *reg, Uint8 *value,
 	union i2c_smbus_data data;
 	unsigned char command;
 
+	set_slave_addr(hndl->fd, devAddr, 0);
+	
 	command = *reg;
 	data.word = *(unsigned short *)value;
 //	printf("");
-	return i2c_smbus_access(gi2cFd, I2C_SMBUS_WRITE,command, I2C_SMBUS_WORD_DATA, &data);
+	return i2c_smbus_access(hndl->fd, I2C_SMBUS_WRITE,command, I2C_SMBUS_WORD_DATA, &data);
 #endif	
 }
 
@@ -374,7 +380,7 @@ int OSA_i2cClose(OSA_I2cHndl *hndl)
 int OSA_CPLD_i2cRead16(OSA_I2cHndl *hndl,Uint16 devAddr, Uint8 *reg, Uint8 *value, Uint32 count)
 {
 	int status = 0;
-	status = OSA_i2cRead16 (hndl, CPLD_IIC_SLAVE_ADDR, reg, value, 2);
+	status = OSA_i2cRead16 (hndl, devAddr, reg, value, 2);
 	return status;
 }
 
@@ -382,7 +388,7 @@ int OSA_CPLD_i2cWrite16(OSA_I2cHndl *hndl, Uint16 devAddr,  Uint8 *reg, Uint8 *v
 {
 	int status = 0;
 
-	status = OSA_i2cWrite16 (hndl, CPLD_IIC_SLAVE_ADDR, reg, value, 2);
+	status = OSA_i2cWrite16 (hndl, devAddr, reg, value, 2);
 	return status;
 }
 

@@ -64,13 +64,12 @@
 #if 0
  	#define OSA_printf(...)  do { printf("\n\r [host] " __VA_ARGS__); fflush(stdout); } while(0)
 #endif
-
+      //while (getchar()!='q')  
   #define OSA_assert(x)  \
   { \
     if( (x) == 0) { \
-      fprintf(stderr, " ASSERT (%s|%s|%d)\r\n", __FILE__, __func__, __LINE__); \
-      while (getchar()!='q')  \
-        ; \
+      while (1)  \
+        fprintf(stderr, " ASSERT (%s|%s|%d)\r\n", __FILE__, __func__, __LINE__); \
     } \
   } 
 

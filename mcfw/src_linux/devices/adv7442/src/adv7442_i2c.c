@@ -45,8 +45,6 @@ static Vps_Adv7442_hpv_vps adv7442_gLineNum[DEVICE_STD_REACH_LAST] = {
 	{"Revs",		0xFFFF,0xFFFF,0xFFFF,0,0}, // FVID2_STD_D1, /**< Interlaced, 720x240 per field NTSC, 720x288 per field PAL. */
 	{"480P",		0xFFFF,0xFFFF,0xFFFF,0,0}, // 7-480px60             
 	{"576P",		0xFFFF,0xFFFF,0xFFFF,0,0},  // 8-576px50
-	{"720P30",	0xFFFF,0xFFFF,0xFFFF,0,0},  // 9-1280x720x60 
-	{"720P25",	0xFFFF,0xFFFF,0xFFFF,0,0},  // 10-1280x720x50 
 	{"720P60",	750,60,1111,1280,720},  // 9-1280x720x60 
 	{"720P50",	750,50,1333,1280,720},  // 10-1280x720x50 
 	{"1080I60",	563,60,1481,1920,540},  // 11-1920x1080x60i                 
@@ -114,8 +112,6 @@ static Vps_Adv7442_sav_eav_vbi  adv7442_SavEavVbi[DEVICE_STD_REACH_LAST] = {
 	{"Revs",		0x00,0x00,0x00,0x00},  			// FVID2_STD_D1, /**< Interlaced, 720x240 per field NTSC, 720x288 per field PAL. */                                               
 	{"480P",		0x00,0x00,0x00,0x00},  			// 7-480px60     
 	{"576P",		0x00,0x00,0x00,0x00},				// 8-576px50   
-	{"720P30",	0x00,0x00,0x00,0x00},				// 9-1280x720x60
-	{"720P25",	0x00,0x00,0x00,0x00},  			// 10-1280x720x50           
 	{"720P60",	255,1541,748,28},				// 9-1280x720x60
 	{"720P50",	251,1537,746,26},  			// 10-1280x720x50           
 //	{"1080I60",	185,2111,560,20},				// 11-1920x1080x60i              	
@@ -185,8 +181,6 @@ static Vps_Adv7442_InMode ArgMode_7442[DEVICE_STD_REACH_LAST] = {
 	{"Revs",0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},  	// FVID2_STD_D1, /**< Interlaced, 720x240 per field NTSC, 720x288 per field PAL. */                                               
 	{"480P60",0x07,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 7-480px60     
 	{"576P50",0x00,0x21,0x5d,0xd0,0xE6,0x90,0xd0,0x02,0x58,0x32,0x00},	// 8-576px50   
-	{"720P30",0x0a,0x21,0x5F,0xd0,0xe6,0x80,0xd0,0x02,0x7f,0x2e,0xe0},	// 9-1280x720x60
-	{"720P25",0x2a,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 10-1280x720x50           
 	{"720P60",0x0a,0x21,0x5F,0xd0,0xe6,0x80,0xd0,0x02,0x7f,0x2e,0xe0},	// 9-1280x720x60
 	{"720P50",0x2a,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 10-1280x720x50           
 	{"1080I60",0x0c,0x21,0x5d,0x10,0x21,0x5d,0x10,0x05,0x21,0x5d,0x10},	// 11-1920x1080x60i              	
@@ -247,13 +241,13 @@ static Vps_Adv7442_InMode ArgMode_7442[DEVICE_STD_REACH_LAST] = {
 /* ========================================================================== */
 UInt16 Device_adv7442_Read16_CPLD(Device_Adv7442Obj * pObj, UInt8 RegAddr)
 {
-	Int32 status = 0;
+//	Int32 status = 0;
 	UInt8 regAddr[1]={0};
 	UInt8 regValue[2]={0};
 	UInt16 data;
 	
 	regAddr[0] = RegAddr;
-	OSA_CPLD_i2cRead16(&gDevice_adv7442CommonObj.i2cHandle,0, regAddr, regValue, 2);
+	OSA_CPLD_i2cRead16(&gDevice_adv7442CommonObj.i2cHandle,CPLD_IIC_SLAVE_ADDR, regAddr, regValue, 2);
 	data = regValue[1]<<8 | regValue[0];
 	
 	return data;
@@ -268,7 +262,7 @@ UInt16 Device_adv7442_Write16_CPLD(Device_Adv7442Obj * pObj, UInt8 RegAddr, UInt
 	regAddr[0] = RegAddr;
 	regValue[0] = RegVal&0xFF;
 	regValue[1] = (RegVal&0xFF00)>>8;
-	status = OSA_CPLD_i2cWrite16 (&gDevice_adv7442CommonObj.i2cHandle, 0, regAddr, regValue, 2 );
+	status = OSA_CPLD_i2cWrite16 (&gDevice_adv7442CommonObj.i2cHandle, CPLD_IIC_SLAVE_ADDR, regAddr, regValue, 2 );
 
 	return status;
 }
@@ -488,11 +482,11 @@ static int Device_adv7442_check_1080_DMTorGTF(Device_Adv7442Obj *pObj, int *inde
 	}
 	return retVal;
 }
-
+#if 0
 static Int32 Device_adv7442_check_SD_CH(Device_Adv7442Obj *pObj, int *inMode)
 {
 	Int32 		retVal=0;
-	unsigned char Reg0, data;
+	unsigned char  data;
 	unsigned int	standard;
 
 	if(gAD7442_Mode == DEVICE_STD_NTSC){
@@ -568,6 +562,7 @@ static Int32 Device_adv7442_check_SD_CH(Device_Adv7442Obj *pObj, int *inMode)
 	
 	return retVal;
 }
+#endif
 
 static int Device_ad7442_SetCPSAV_EAV(Device_Adv7442Obj *pObj, unsigned int sav, unsigned int eav)
 {
@@ -712,6 +707,7 @@ static Int32 Device_adv7442GetTMDS_A(Device_Adv7442Obj *pObj, unsigned int *tmds
 	return retVal;
 }
 
+#if 0
 static Int32 Device_adv7442GetTMDS_B(Device_Adv7442Obj *pObj, unsigned int *tmds_b)
 {
 	int retVal=0;
@@ -722,6 +718,7 @@ static Int32 Device_adv7442GetTMDS_B(Device_Adv7442Obj *pObj, unsigned int *tmds
 
 	return retVal;
 }
+#endif
 
 static Int32 Device_adv7442GetInfo_D(Device_Adv7442Obj *pObj, ADV7442_SyncInfo *SyncInfo)
 {
@@ -1084,8 +1081,8 @@ static Int32 Device_adv7442InitComm(Device_Adv7442Obj *pObj, int tmds)
 static Int32 Device_adv7442SDInterFaceInit(Device_Adv7442Obj *pObj)
 {
 	Int32 		retVal=0;
-	unsigned char Reg0, data;
-	unsigned int	standard;
+//	unsigned char Reg0, data;
+//	unsigned int	standard;
 	
 	Device_adv7442Reset(pObj);
 #if 0
@@ -1285,7 +1282,7 @@ static Int32 Device_adv7442AnalogInterFaceInit(Device_Adv7442Obj *pObj)
 static Int32 Device_adv7442AnalogInterFaceSetRes(Device_Adv7442Obj *pObj, int inMode)
 {
 	Int32 	retVal = 0;
-	unsigned char regVal=0;
+//	unsigned char regVal=0;
 	
 	if(!ArgMode_7442[inMode].config[0]){
 		ADV_OSA_printf("Self Resolution!\n");
@@ -1495,6 +1492,7 @@ static Int32 Device_adv7442Config(Device_Adv7442Obj *pObj, int inMode, int tmds,
 	return retVal;
 }
 
+#if 0
 static Int32 Device_adv7442GetResolution_CPLD(Device_Adv7442Obj *pObj)
 {
 	Int32 	hsfq = 0, linenum=0;
@@ -1528,6 +1526,7 @@ static Int32 Device_adv7442GetResolution_CPLD(Device_Adv7442Obj *pObj)
 
 	return inMode;
 }
+#endif
 
 static Int32 Device_adv7442GetResolutionCVBS(Device_Adv7442Obj *pObj)
 {
@@ -1571,12 +1570,13 @@ static Int32 Device_adv7442GetResolutionCVBS(Device_Adv7442Obj *pObj)
 	}
 #endif	
 	gAD7442_Mode = inMode;
+	return 0;
 }
 
 static Int32 Device_adv7442GetResolutionCP(Device_Adv7442Obj *pObj)
 {
 	Int32 	retVal = 0;
-	Int32	hpv=0, vps=0, tmds_a=-1;
+	Int32	hpv=0, vps=0;
 	int 		inMode;
 	int 		retry = RETRYNUMS;
 	ADV7442_SyncInfo sysinformation;
@@ -1930,6 +1930,7 @@ static Int32 Device_adv7442GetResolution(Device_Adv7442Obj *pObj)
 		default:
 			printf("Error gAD7442_Source_Ch Index Unknow!\n");
 	}
+	return 0;
 }
 
 Int32 Device_adv7442GetExternInformation(Device_Adv7442Obj * pObj,
@@ -1979,6 +1980,7 @@ Int32 Device_adv7442GetCPLDVersion(Device_Adv7442Obj * pObj)
 	UInt16           regVal = 0;
 	regVal = Device_adv7442_Read16_CPLD(pObj, 16);
 //	OSA_printf("CPLD Version = 0x%x\n",regVal);	
+	return 0;
 }
 
 /* reset ADV7442 OFM logic  */
@@ -2103,7 +2105,7 @@ Int32 Device_adv7442GetDirection ( Device_Adv7442Obj * pObj,
 	Int32 status = 0;
 	Int32 inMode = 0,tmds=0;
 	Int32 val;
-	Int32 sav,eav,s_vbi,e_vbi;
+	Int32 sav,e_vbi;
 
 	inMode = gAD7442_Mode;
 	tmds = gAD7442_TMDS;
@@ -2156,6 +2158,7 @@ Int32 Device_adv7442GetSourceChan ( Device_Adv7442Obj * pObj,
 						unsigned int *source)
 {
 	*source = gAD7442_Source_Ch;
+	return 0;
 }
 
 

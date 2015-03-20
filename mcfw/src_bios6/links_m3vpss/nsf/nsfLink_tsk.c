@@ -50,7 +50,7 @@ Int32 NsfLink_tskRun(NsfLink_Obj * pObj,
                 if (status != FVID2_SOK)
                 {
                     runDone = TRUE;
-                    runAckMsg = TRUE;
+                    //runAckMsg = TRUE;
                 }
                 break;
 

@@ -303,5 +303,20 @@ Int32 Device_adv7442PrintChipId ( Device_Adv7442Obj * pObj);
 Int32 Device_adv7442SetExtendedSettings( Device_Adv7442Obj * pObj);
 
 Int32 Device_adv7442SetIndirectRegisters(Device_Adv7442Obj * pObj);
+Int32 Device_adv7442SetDirection ( Device_Adv7442Obj * pObj,
+                             unsigned int *direction );
+Int32 Device_adv7442GetDirection ( Device_Adv7442Obj * pObj,
+                             unsigned int *direction );
+Int32 Device_adv7442SetSourceChan ( Device_Adv7442Obj * pObj,
+						unsigned int *source);
+Int32 Device_adv7442GetSourceChan ( Device_Adv7442Obj * pObj,
+						unsigned int *source);
+Int32 Device_adv7442InvertCbCr ( Device_Adv7442Obj * pObj);
+Int32 Device_adv7442_CSC ( Device_Adv7442Obj * pObj,unsigned char *data);
+Int32 Device_adv7442GetHDCP(Device_Adv7442Obj * pObj, Int32 *hdcp);
+Int32 Device_adv7442GetExternInformation(Device_Adv7442Obj * pObj,
+							Device_VideoDecoderExternInforms* extenInfor);
+
+
 
 #endif /*  _DEVICE_ADV7442_PRIV_H_  */

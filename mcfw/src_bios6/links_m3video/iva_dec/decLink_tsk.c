@@ -14,6 +14,8 @@ UInt8 gDecLink_tskStack[DEC_LINK_OBJ_MAX][DEC_LINK_TSK_STACK_SIZE];
 #pragma DATA_SECTION(gDecLink_obj, ".bss:gDecLink_objSection")
 DecLink_Obj gDecLink_obj[DEC_LINK_OBJ_MAX];
 
+UInt32 gDecLinkRunCount;
+
 Void DecLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
 {
     UInt32 cmd = Utils_msgGetCmd(pMsg);
@@ -48,7 +50,8 @@ Void DecLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
     ackMsg = FALSE;
     pMsgTmp = NULL;
     tmpStatus = FVID2_SOK;
-
+	
+   gDecLinkRunCount = 0;
     while (!done)
     {
         status = Utils_tskRecvMsg(pTsk, &pMsg, BIOS_WAIT_FOREVER);
@@ -75,6 +78,8 @@ Void DecLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
    		  Utils_tskFlushMsg(pTsk, flushCmds, 1);
 
                 DecLink_codecGetProcessedDataMsgHandler(pObj);
+
+		  gDecLinkRunCount++;
                 break;
 
             case DEC_LINK_CMD_PRINT_IVAHD_STATISTICS:

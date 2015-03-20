@@ -194,7 +194,7 @@ Int32 AlgLink_algDelete(AlgLink_Obj * pObj)
 
 Int32 AlgLink_algProcessData(AlgLink_Obj * pObj)
 {
-    UInt32 frameId, status;
+    UInt32 frameId;
     System_LinkInQueParams *pInQueParams;
     FVID2_Frame *pFrame;
 
@@ -209,14 +209,16 @@ Int32 AlgLink_algProcessData(AlgLink_Obj * pObj)
         /* SCD should be done first as it requires to operate on raw YUV */
         if (pObj->createArgs.enableSCDAlg)
         {
-            status = AlgLink_ScdalgProcessData(&pObj->scdAlg, &frameList, &pObj->outObj[0].bufOutQue);
+            AlgLink_ScdalgProcessData(&pObj->scdAlg, &frameList, &pObj->outObj[0].bufOutQue);
 
+			#if 0
             if (status == FVID2_SOK)
             {
                 /* Send-out the output bitbuffer */
                 System_sendLinkCmd(pObj->createArgs.outQueParams[ALG_LINK_SCD_OUT_QUE].nextLink,
                                    SYSTEM_CMD_NEW_DATA);
             }
+			#endif
 
         }
 

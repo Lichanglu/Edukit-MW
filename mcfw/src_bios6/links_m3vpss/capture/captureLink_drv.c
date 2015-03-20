@@ -619,7 +619,35 @@ Int32 CaptureLink_drvCreateInst(CaptureLink_Obj * pObj, UInt16 instId)
                 inWidth = 1920;
                 inHeight = 1200;
 				
-                break;		   	
+                break;		
+		   case FVID2_STD_1920x2160_30:
+                inScanFormat = FVID2_SF_PROGRESSIVE;
+                {
+                    pInst->maxWidth = 1920;
+                    pInst->maxHeight = 2160;
+                }
+                inWidth = 1920;
+                inHeight = 1080;
+                break;
+		   case FVID2_STD_1920x2400_30:
+                inScanFormat = FVID2_SF_PROGRESSIVE;
+                {
+                    pInst->maxWidth = 1920;
+                    pInst->maxHeight = 2400;
+                }
+                inWidth = 1920;
+                inHeight = 1200;
+                break;
+		   case FVID2_STD_3840x1080_30:
+                inScanFormat = FVID2_SF_PROGRESSIVE;
+                {
+                    pInst->maxWidth = 3840;
+                    pInst->maxHeight = 1080;
+                }
+                inWidth = 1920;
+                inHeight = 1080;
+				
+                break;	
            default:
                 inScanFormat = FVID2_SF_PROGRESSIVE;
                 {
@@ -631,7 +659,7 @@ Int32 CaptureLink_drvCreateInst(CaptureLink_Obj * pObj, UInt16 instId)
 				
                 break;
         }
-		Vps_printf("FVID2_STD_1920x1200x60= %d,pInst->maxWidth = %d,pInst->maxHeight = %d\n",FVID2_STD_1920x1200_60,pInst->maxWidth,pInst->maxHeight);
+
         if (pVipCreateArgs->inDataFormat == FVID2_DF_RGB24_888)
         {
             pVipCreateArgs->videoCaptureMode =
@@ -647,7 +675,7 @@ Int32 CaptureLink_drvCreateInst(CaptureLink_Obj * pObj, UInt16 instId)
 		}else{
 	        	if(Vps_platformTI816xGetCpuRev() > VPS_PLATFORM_CPU_REV_1_1)
 			{
-				#if 0
+				#if 1
 				pVipCreateArgs->videoCaptureMode = 
 					VPS_CAPT_VIDEO_CAPTURE_MODE_SINGLE_CH_NON_MUX_DISCRETE_SYNC_ACTVID_VSYNC;
 				#else
@@ -797,8 +825,8 @@ Int32 CaptureLink_drvCreateInst(CaptureLink_Obj * pObj, UInt16 instId)
             }
             else
             {
-                pQueChInfo->width = pInst->maxWidth;
-                pQueChInfo->height = pInst->maxHeight;
+                pQueChInfo->width = inWidth;//pInst->maxWidth;
+                pQueChInfo->height = inHeight;//pInst->maxHeight;
             }
 
             pQueChInfo->startX = 0;
@@ -1497,17 +1525,18 @@ Void CaptureLink_drvBlindAreaProcessData(CaptureLink_Obj * pObj,
 
 Int32 CaptureLink_drvProcessData(CaptureLink_Obj * pObj)
 {
-    UInt32 frameId, queId, streamId, queChId, elaspedTime;
-    FVID2_FrameList frameList;
-    FVID2_Frame *pFrame;
-    volatile UInt32 sendMsgToTsk = 0, tmpValue;
-    Int32 status;
+	UInt32 frameId, queId, streamId, queChId, elaspedTime;
+	FVID2_FrameList frameList;
+	FVID2_Frame *pFrame;
+	volatile UInt32 sendMsgToTsk = 0, tmpValue;
+	Int32 status;
 	System_FrameInfo *pFrameInfo;
-	UInt key;
+	System_LinkChInfo *pQueChInfo;
+//	UInt key;
 	CaptureLink_InstObj *pInst;
 	VCAP_VIDEO_SOURCE_CH_STATUS_S *pVidStatus;
 
-    pObj->cbCountServicedCount++;
+	pObj->cbCountServicedCount++;
 	static UInt32 lasttime = 0;
 
     System_displayUnderflowCheck(FALSE);
@@ -1526,7 +1555,6 @@ Int32 CaptureLink_drvProcessData(CaptureLink_Obj * pObj)
             for (frameId = 0; frameId < frameList.numFrames; frameId++)
             {
                 pFrame = frameList.frames[frameId];
-		  Vps_printf("Capture OK!\n");
 	//			Vps_printf("****capture,pFrame->channelNum =%d=frameList.numFrames=%d=frameList.numFrames=%d\n ",pFrame->channelNum,frameList.numFrames,frameList.numFrames);
 
                 CaptureLink_setFrameWallTime(pObj,pFrame);
@@ -1583,25 +1611,38 @@ Int32 CaptureLink_drvProcessData(CaptureLink_Obj * pObj)
                 pFrame->perFrameCfg = NULL;
                 pFrame->channelNum = queChId;
                 sendMsgToTsk |= (1 << queId);
-
-				pFrameInfo = (System_FrameInfo *) pFrame->appData;
-			
-				pFrameInfo->rtChInfoUpdate    = 1;
-				//pFrameInfo->rtChInfo.width    = VpsUtils_align(pVidStatus->frameWidth, 16);
-				//pFrameInfo->rtChInfo.height   = VpsUtils_align(pVidStatus->frameHeight, 8);
+		pQueChInfo = &pObj->info.queInfo[queId].chInfo[queChId];
+		pFrameInfo = (System_FrameInfo *) pFrame->appData;
+	
+		pFrameInfo->rtChInfoUpdate    = 1;
+		//pFrameInfo->rtChInfo.width    = VpsUtils_align(pVidStatus->frameWidth, 16);
+		//pFrameInfo->rtChInfo.height   = VpsUtils_align(pVidStatus->frameHeight, 8);
 #define Reach_floor(val, align)  (((val) / (align)) * (align))
-				pFrameInfo->rtChInfo.width    = Reach_floor(pVidStatus->frameWidth, 16);
-				if(pVidStatus->frameHeight != 540)
-					pFrameInfo->rtChInfo.height   = Reach_floor(pVidStatus->frameHeight, 8);
+		pFrameInfo->rtChInfo.width    = pVidStatus->frameWidth;//Reach_floor(pVidStatus->frameWidth, 16);
+		pFrameInfo->rtChInfo.height   = pVidStatus->frameHeight;//Reach_floor(pVidStatus->frameHeight, 8);
 
-				pFrameInfo->rtChInfo.pitch[0] = 1920;
-				pFrameInfo->rtChInfo.pitch[1] = 1920;
+		pFrameInfo->rtChInfo.pitch[0] = pQueChInfo->pitch[0];
+		pFrameInfo->rtChInfo.pitch[1] = pQueChInfo->pitch[1];
 
-				if((pFrameInfo->rtChInfo.width == 0) || (pFrameInfo->rtChInfo.height == 0))
-				{
-					pFrameInfo->rtChInfo.width  = 1920;
-					pFrameInfo->rtChInfo.height = 1080;
-				}
+		if((pFrameInfo->rtChInfo.width == 0) || (pFrameInfo->rtChInfo.height == 0))
+		{
+			pFrameInfo->rtChInfo.width  = 1920;
+			pFrameInfo->rtChInfo.height = 1200;
+		}
+
+		if(pFrameInfo->rtChInfo.height == 2400)
+		{
+			pFrameInfo->rtChInfo.height = 1200;
+		}
+
+		if(pVidStatus->isInterlaced)
+		{
+			pFrameInfo->rtChInfo.scanFormat = SYSTEM_SF_INTERLACED;
+		}
+		else
+		{
+			pFrameInfo->rtChInfo.scanFormat = SYSTEM_SF_PROGRESSIVE;
+		}
 				
                 CaptureLink_drvBlindAreaProcessData(pObj,
                                                     queId,

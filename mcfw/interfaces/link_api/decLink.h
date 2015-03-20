@@ -30,7 +30,7 @@
 #define DEC_LINK_MAX_OUT_QUE     (1)
 
 /** \brief Max DEC channels per link */
-#define DEC_LINK_MAX_CH          (64)
+#define DEC_LINK_MAX_CH         (16)// (64)
 
 /** \brief Maximum number of output buffers supported per channel. */
 #define DEC_LINK_MAX_NUM_OUT_BUF_PER_CH      (16)

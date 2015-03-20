@@ -70,8 +70,8 @@ typedef struct
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static Int32 Device_ths8200GetHdmiChipId(Device_Ths8200Obj* psiiObj,
-                                   Device_Ths8200HdmiChipId *hdmichipId);
+//static Int32 Device_ths8200GetHdmiChipId(Device_Ths8200Obj* psiiObj,
+ //                                  Device_Ths8200HdmiChipId *hdmichipId);
 
 static Int32 Device_ths8200GetDetailedChipId(Device_Ths8200Handle handle,
                                           Ptr cmdArgs,
@@ -100,25 +100,25 @@ static Int32 Device_ths8200GetPrms(Device_Ths8200Handle handle,
                                Ptr cmdStatusArgs);
 static Int32 Device_ths8200DeviceInit(Device_Ths8200Obj* pObj);
 
-static Int32 Device_ths8200Reset(Device_Ths8200Obj* pObj);
-static Int32 Device_ths8200Enable(Device_Ths8200Obj* pObj);
-static Int32 Device_ths8200PowerUpTxm(Device_Ths8200Obj* pObj);
-static Int32 Device_ths8200CfgInBus(Device_Ths8200Obj* pObj);
-static Int32 Device_ths8200CfgYcMode(Device_Ths8200Obj* pObj);
-static Int32 Device_ths8200CfgSyncMode(Device_Ths8200Obj* pObj);
-static Int32 Device_ths8200PrgmEmbSyncTimingInfo(
-                Device_Ths8200Obj *siiObj,
-                Device_THS8200ModeInfo *siModeInfo);
-static Int32 Device_ths8200PrgmExtSyncTimingInfo(
-                Device_Ths8200Obj *siiObj,
-                Device_THS8200ModeInfo *siModeInfo);
-static Int32 Device_ths8200PrgmAvInfoFrame(
-                Device_Ths8200Obj *siiObj,
-                Device_THS8200ModeInfo *modeInfo);
-static Int32 Device_ths8200PrgmMdResetRegs(
-                Device_Ths8200Obj *siiObj,
-                Device_THS8200ModeInfo *siModeInfo);
-static Int32 Device_ths8200CalcCRC(UInt8 *regAddr, UInt8 *regValue, UInt32 *regCnt);
+//static Int32 Device_ths8200Reset(Device_Ths8200Obj* pObj);
+//static Int32 Device_ths8200Enable(Device_Ths8200Obj* pObj);
+//static Int32 Device_ths8200PowerUpTxm(Device_Ths8200Obj* pObj);
+//static Int32 Device_ths8200CfgInBus(Device_Ths8200Obj* pObj);
+//static Int32 Device_ths8200CfgYcMode(Device_Ths8200Obj* pObj);
+//static Int32 Device_ths8200CfgSyncMode(Device_Ths8200Obj* pObj);
+//static Int32 Device_ths8200PrgmEmbSyncTimingInfo(
+//                Device_Ths8200Obj *siiObj,
+//                Device_THS8200ModeInfo *siModeInfo);
+//static Int32 Device_ths8200PrgmExtSyncTimingInfo(
+//                Device_Ths8200Obj *siiObj,
+//                Device_THS8200ModeInfo *siModeInfo);
+//static Int32 Device_ths8200PrgmAvInfoFrame(
+//                Device_Ths8200Obj *siiObj,
+ //               Device_THS8200ModeInfo *modeInfo);
+//static Int32 Device_ths8200PrgmMdResetRegs(
+ //               Device_Ths8200Obj *siiObj,
+ //               Device_THS8200ModeInfo *siModeInfo);
+//static Int32 Device_ths8200CalcCRC(UInt8 *regAddr, UInt8 *regValue, UInt32 *regCnt);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -207,6 +207,7 @@ Int32 Device_ths7303_Write8(Device_Ths8200Obj * pObj, UInt8 RegAddr, UInt8 RegVa
 	regValue[0] = RegVal;
 	
 	retVal = OSA_i2cWrite8 (&gDevice_ths8200CommonObj.i2cHandle, THS7303_IIC_SLAVE_ADDR, regAddr, regValue,1);
+	return retVal;
 }
 
 UInt8 Device_ths8200_Read8(Device_Ths8200Obj * pObj, UInt8 RegAddr)
@@ -231,6 +232,7 @@ Int32 Device_ths8200_Write8(Device_Ths8200Obj * pObj, UInt8 RegAddr, UInt8 RegVa
 	regValue[0] = RegVal;
 	
 	retVal = OSA_i2cWrite8 (&gDevice_ths8200CommonObj.i2cHandle, THS8200_IIC_SLAVE_ADDR, regAddr, regValue,1);
+	return retVal;
 }
 
 Int32 Device_ths8200Init(void)
@@ -459,7 +461,7 @@ static Int32 Device_ths8200Stop(Device_Ths8200Handle handle,
 
 static Int32 Device_ths8200OutPutYPbPr(Device_Ths8200Handle handle,THS8200_SUPPORT_FORMAT outMode)
 {
-	Int32 retVal = 0;
+	//Int32 retVal = 0;
 	Device_Ths8200Obj *pObj = (Device_Ths8200Obj *)handle;
 	
 	printf("Device_ths8200OutPutYPbPr outMode = %d!\n",outMode);
@@ -538,7 +540,7 @@ static Int32 Device_ths8200OutPutYPbPr(Device_Ths8200Handle handle,THS8200_SUPPO
 		default:
 			printf("THS8200 Out Put Mode not Support!\n");
 	}
-
+	return 0;
 }
 
 static Int32 Device_ths8200OutPutVGA(Device_Ths8200Handle handle,THS8200_SUPPORT_FORMAT outMode)
@@ -608,7 +610,7 @@ static Int32 Device_ths8200SetMode(Device_Ths8200Handle handle,
 {
 	Int32 retVal = 0;
 	Int32 outMode=-1;
-	Device_Ths8200Obj *pObj = (Device_Ths8200Obj *)handle;
+	//Device_Ths8200Obj *pObj = (Device_Ths8200Obj *)handle;
 
 	outMode = *(Int32 *)cmdArgs;
 
@@ -685,8 +687,8 @@ static Int32 Device_ths8200GetHpd(Device_Ths8200Handle handle,
 static Int32 Device_ths8200DeviceInit(Device_Ths8200Obj* pObj)
 {
 	Int32 status = 0;
-	Int32 i;
-	unsigned char regVal=0, regAddr=0;
+//	Int32 i;
+//	unsigned char regVal=0, regAddr=0;
 
 
 		printf("Call Device_ths8200DeviceInit()!\n");
@@ -826,7 +828,7 @@ static Int32 Device_ths8200DeviceInit(Device_Ths8200Obj* pObj)
 #endif	
 	return status;
 }
-
+#if 0
 /*
   Device Res-set
 */
@@ -885,7 +887,6 @@ static Int32 Device_ths8200CfgSyncMode(Device_Ths8200Obj* pObj)
 	return status;
 }
 
-
 /*
   Get TP5158 chip ID, revision ID and firmware patch ID
 */
@@ -937,7 +938,7 @@ static Int32 Device_ths8200CalcCRC(UInt8 *regAddr, UInt8 *regValue, UInt32 *regC
 	Int32 retVal = 0;
 	return (retVal);
 }
-
+#endif
 static Int32 Device_ths8200SetPrms(Device_Ths8200Handle handle,
                                Ptr cmdArgs,
                                Ptr cmdStatusArgs)

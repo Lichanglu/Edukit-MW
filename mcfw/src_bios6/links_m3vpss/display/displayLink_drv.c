@@ -734,13 +734,31 @@ Int32 DisplayLink_drvDisplayAllocAndQueBlankFrame(DisplayLink_Obj * pObj)
 
 Int32 DisplayLink_drvSetFmt(DisplayLink_Obj * pObj, FVID2_Format *pFormat)
 {
-
+#if 0
     Int32 status;
 
     status = FVID2_setFormat(pObj->displayHndl, pFormat);
     UTILS_assert(status == FVID2_SOK);
     return(status);
-
+#else
+	Int32 status;    
+	if(pFormat->dataFormat == FVID2_DF_YUV420SP_UV)    
+	{        
+		pFormat->pitch[0] =            
+		VpsUtils_align(pFormat->width, VPS_BUFFER_ALIGNMENT * 2);        
+		pFormat->pitch[1] =            VpsUtils_align(pFormat->width, VPS_BUFFER_ALIGNMENT * 2);        
+		pFormat->pitch[2] = 0;    
+	}    
+	else    
+	{        
+		pFormat->pitch[0] = VpsUtils_align(pFormat->width, VPS_BUFFER_ALIGNMENT)*2;        
+		pFormat->pitch[1] = pFormat->pitch[2] = 0;   
+	}    
+	status = FVID2_setFormat(pObj->displayHndl, pFormat);	
+	Vps_printf("DisplayLink_drvSetFmt status=%d,width=%d,heigh=%d,pitch:%d,%d\n",status,pFormat->width,pFormat->height,pFormat->pitch[0],pFormat->pitch[1]);   
+	UTILS_assert(status == FVID2_SOK);    
+	return(status);
+#endif
 
 }
 
@@ -1371,6 +1389,10 @@ Int32 DisplayLink_drvStart(DisplayLink_Obj * pObj)
     pObj->prevTime = pObj->startTime;
 
     status = FVID2_start(pObj->displayHndl, NULL);
+    if(status != FVID2_SOK)
+    {
+        Vps_printf("DisplayLink_drvStart: status=%d\n", status);
+    }
     UTILS_assert(status == FVID2_SOK);
 
     pObj->totalTime = Utils_getCurTimeInMsec();
@@ -1436,3 +1458,54 @@ Int32 DisplayLink_printBufferStatus(DisplayLink_Obj * pObj)
     return 0;
 }
 
+Int32 DisplayLink_freeFrame(DisplayLink_Obj * pObj)
+{
+    Int i;
+    FVID2_FrameList frameList;
+    System_LinkInQueParams *pInQueParams;
+
+    /* Free frames queued in inactive queues immediately */
+    for (i = 0; i < pObj->createArgs.numInputQueues;i++)
+    {
+        if (i != pObj->curActiveQueue)
+        {
+            frameList.numFrames = 0;
+            pInQueParams =
+              &pObj->createArgs.inQueParams[i];
+            System_getLinksFullFrames(pInQueParams->prevLinkId,
+                                      pInQueParams->prevLinkQueId,
+                                      &frameList);
+            if (frameList.numFrames)
+            {
+                pObj->inFrameGetCount += frameList.numFrames;
+                pObj->inFramePutCount += frameList.numFrames;
+                System_putLinksEmptyFrames(pInQueParams->prevLinkId,
+                                           pInQueParams->prevLinkQueId,
+                                           &frameList);
+            }
+        }
+    }
+    UTILS_assert(pObj->curActiveQueue < pObj->createArgs.numInputQueues);
+    pInQueParams = &pObj->createArgs.inQueParams[pObj->curActiveQueue];
+    while(1)
+    {
+        /* que frames if any */
+        System_getLinksFullFrames(pInQueParams->prevLinkId,
+                                  pInQueParams->prevLinkQueId, &frameList);
+        pObj->inFrameGetCount += frameList.numFrames;
+
+        if (frameList.numFrames)
+        {
+            pObj->inFramePutCount += frameList.numFrames;
+
+            System_putLinksEmptyFrames(pInQueParams->prevLinkId,
+                                       pInQueParams->prevLinkQueId, &frameList);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return 0;
+}

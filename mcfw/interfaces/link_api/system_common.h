@@ -36,21 +36,21 @@
 
 /* Frequency values of various cores set explicitly during system init */
 #if defined(TI_814X_BUILD)
-#define SYSTEM_M3VPSS_FREQ         (240*1000*1000)
-#define SYSTEM_M3VIDEO_FREQ        (240*1000*1000)
-#define SYSTEM_DSP_FREQ            (750*1000*1000)
+#define SYSTEM_M3VPSS_FREQ         (240)//(240*1000*1000)
+#define SYSTEM_M3VIDEO_FREQ        (240)//(240*1000*1000)
+#define SYSTEM_DSP_FREQ            (750)//(750*1000*1000)
 #endif
 
 #if defined(TI_8107_BUILD)
-#define SYSTEM_M3VPSS_FREQ         (280*1000*1000)
+#define SYSTEM_M3VPSS_FREQ         (280)//(280*1000*1000)
 #define SYSTEM_M3VIDEO_FREQ        (SYSTEM_M3VPSS_FREQ)
 #define SYSTEM_DSP_FREQ            (0)
 #endif
 
 #if defined(TI_816X_BUILD)
-#define SYSTEM_M3VPSS_FREQ         (280*1000*1000)
-#define SYSTEM_M3VIDEO_FREQ        (280*1000*1000)
-#define SYSTEM_DSP_FREQ            (800*1000*1000)
+#define SYSTEM_M3VPSS_FREQ        (280)// (280*1000*1000)
+#define SYSTEM_M3VIDEO_FREQ        (280)//(280*1000*1000)
+#define SYSTEM_DSP_FREQ            (800)//(800*1000*1000)
 #endif
 
 #define SYSTEM_CMD_CREATE          (0x00000000)

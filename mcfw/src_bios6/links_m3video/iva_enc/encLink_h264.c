@@ -50,6 +50,8 @@ static UInt32 enc_link_h264_get_svc_temporalid(Int32 *frameAddr,
                                                      Int32 frameBytes);
 static Int32 EncLink_h264EncoderReset(EncLink_H264Obj * hObj);
 
+static Int32 EncLinkH264_algGetDynamicParams(Int32 chId,EncLink_algObj * algObj);
+
 extern IRES_Fxns H264ENC_TI_IRES;
 extern const IH264ENC_DynamicParams H264ENC_TI_DYNAMICPARAMS;
 
@@ -235,6 +237,7 @@ Int32 Enclink_h264CalcSecondFieldOffsets(IVIDEO2_BufDesc *inputBufDesc,
 /*
  *  ======== Enclink_h264EncodeFrame ========
  */
+ UInt32 s_encFrameCount[ENC_LINK_MAX_CH] = {0};
 Int32 Enclink_h264EncodeFrameBatch(EncLink_Obj * pObj,
                                    EncLink_ReqBatch * reqObjBatch,
                                    Int32 tskId)
@@ -272,7 +275,13 @@ Int32 Enclink_h264EncodeFrameBatch(EncLink_Obj * pObj,
         
         status = EncLinkH264_algSetConfig(&pChObj->algObj);
         status = EncLinkH264_algGetConfig(&pChObj->algObj);
-
+#if 0
+	 if(s_encFrameCount[pReqObj->OutBuf->channelNum] % 1000 == 0)
+ 	{
+		EncLinkH264_algGetDynamicParams(pReqObj->OutBuf->channelNum,&(pChObj->algObj));
+ 	}
+	 s_encFrameCount[pReqObj->OutBuf->channelNum]++;
+#endif
         if (ENC_LINK_S_SUCCESS != status)
         {
           return XDM_EFAIL;
@@ -284,9 +293,14 @@ Int32 Enclink_h264EncodeFrameBatch(EncLink_Obj * pObj,
         inputBufDesc = &pChObj->algObj.u.h264AlgIfObj.inBufs;
         outputBufDesc = &pChObj->algObj.u.h264AlgIfObj.outBufs;
         handle = pChObj->algObj.u.h264AlgIfObj.algHandle;
-
+#if 0
         inArgs->videnc2InArgs.inputID =
                 (UInt32) pReqObj->InFrameList.frames[0]->addr[0][0];
+#else
+	/*设置输入时戳*/
+	inArgs->videnc2InArgs.inputID =
+                (UInt32) pReqObj->InFrameList.frames[0]->timeStamp;
+#endif
 
         for (i = 0; i < inputBufDesc->numPlanes; i++)
         {
@@ -475,6 +489,8 @@ Int32 Enclink_h264EncodeFrameBatch(EncLink_Obj * pObj,
 
         pReqObj->OutBuf->numTemporalLayerSetInCodec = pChObj->algObj.u.h264AlgIfObj
                                                      .staticParams.numTemporalLayer;
+	/*设置输出pts*/
+	pReqObj->OutBuf->timeStamp = outArgs->videnc2OutArgs.freeBufID[0];
 
         processListArrayIdx++;
 
@@ -595,6 +611,7 @@ static Int enclink_h264_set_static_params(IH264ENC_Params * staticParams,
     staticParams->rateControlParams.rateControlParamsPreset = IH264_RATECONTROLPARAMS_USERDEFINED;
 // staticParams->rateControlParams.rcAlgo = algCreateParams->rateControlPreset;
     staticParams->videnc2Params.maxBitRate = algCreateParams->maxBitRate;
+    staticParams->videnc2Params.minBitRate  = 128*1000;
 
     staticParams->videnc2Params.inputDataMode = IVIDEO_ENTIREFRAME;
     staticParams->videnc2Params.outputDataMode = IVIDEO_ENTIREFRAME;
@@ -1135,7 +1152,8 @@ static Int enclink_h264_set_dynamic_params(IH264ENC_DynamicParams *
     if(dynamicParams->rateControlParams.rcAlgo == IH264_RATECONTROL_PRC)
     {
         dynamicParams->rateControlParams.HRDBufferSize
-            = (3 * algDynamicParams->targetBitRate)/2;
+            //= (3 * algDynamicParams->targetBitRate)/2;
+            = 2 * algDynamicParams->targetBitRate;
     }
     else
     {
@@ -1225,23 +1243,33 @@ static Void enclink_h264_freersrc(EncLink_H264Obj * hObj, Int rsrcMask)
     }
 }
 
-static Int enclink_print_dynamic_params(IVIDENC2_DynamicParams *videnc2DynamicParams)
+static Int enclink_print_dynamic_params(IH264ENC_DynamicParams *dynamicParams)
 {
-    Vps_printf("videnc2DynamicParams -> inputHeight             : %d\n", videnc2DynamicParams->inputHeight);
-    Vps_printf("videnc2DynamicParams -> inputWidth              : %d\n", videnc2DynamicParams->inputWidth);
-    Vps_printf("videnc2DynamicParams -> refFrameRate            : %d\n", videnc2DynamicParams->refFrameRate);
-    Vps_printf("videnc2DynamicParams -> targetFrameRate         : %d\n", videnc2DynamicParams->targetFrameRate);
-    Vps_printf("videnc2DynamicParams -> targetBitRate           : %d\n", videnc2DynamicParams->targetBitRate);
-    Vps_printf("videnc2DynamicParams -> intraFrameInterval      : %d\n", videnc2DynamicParams->intraFrameInterval);
-    Vps_printf("videnc2DynamicParams -> generateHeader          : %d\n", videnc2DynamicParams->generateHeader);
-    Vps_printf("videnc2DynamicParams -> captureWidth            : %d\n", videnc2DynamicParams->captureWidth);
-    Vps_printf("videnc2DynamicParams -> forceFrame              : %d\n", videnc2DynamicParams->forceFrame);
-    Vps_printf("videnc2DynamicParams -> interFrameInterval      : %d\n", videnc2DynamicParams->interFrameInterval);
-    Vps_printf("videnc2DynamicParams -> mvAccuracy              : %d\n", videnc2DynamicParams->mvAccuracy);
-    Vps_printf("videnc2DynamicParams -> sampleAspectRatioHeight : %d\n", videnc2DynamicParams->sampleAspectRatioHeight);
-    Vps_printf("videnc2DynamicParams -> sampleAspectRatioWidth  : %d\n", videnc2DynamicParams->sampleAspectRatioWidth);
-    Vps_printf("videnc2DynamicParams -> ignoreOutbufSizeFlag    : %d\n", videnc2DynamicParams->ignoreOutbufSizeFlag);
-    Vps_printf("videnc2DynamicParams -> lateAcquireArg          : %d\n", videnc2DynamicParams->lateAcquireArg);
+    Vps_printf("videnc2DynamicParams -> inputHeight             : %d\n", dynamicParams->videnc2DynamicParams.inputHeight);
+    Vps_printf("videnc2DynamicParams -> inputWidth              : %d\n", dynamicParams->videnc2DynamicParams.inputWidth);
+    Vps_printf("videnc2DynamicParams -> refFrameRate            : %d\n", dynamicParams->videnc2DynamicParams.refFrameRate);
+    Vps_printf("videnc2DynamicParams -> targetFrameRate         : %d\n", dynamicParams->videnc2DynamicParams.targetFrameRate);
+    Vps_printf("videnc2DynamicParams -> targetBitRate           : %d\n", dynamicParams->videnc2DynamicParams.targetBitRate);
+    Vps_printf("videnc2DynamicParams -> intraFrameInterval      : %d\n", dynamicParams->videnc2DynamicParams.intraFrameInterval);
+    Vps_printf("videnc2DynamicParams -> generateHeader          : %d\n", dynamicParams->videnc2DynamicParams.generateHeader);
+    Vps_printf("videnc2DynamicParams -> captureWidth            : %d\n", dynamicParams->videnc2DynamicParams.captureWidth);
+    Vps_printf("videnc2DynamicParams -> forceFrame              : %d\n", dynamicParams->videnc2DynamicParams.forceFrame);
+    Vps_printf("videnc2DynamicParams -> interFrameInterval      : %d\n", dynamicParams->videnc2DynamicParams.interFrameInterval);
+    Vps_printf("videnc2DynamicParams -> mvAccuracy              : %d\n", dynamicParams->videnc2DynamicParams.mvAccuracy);
+    Vps_printf("videnc2DynamicParams -> sampleAspectRatioHeight : %d\n", dynamicParams->videnc2DynamicParams.sampleAspectRatioHeight);
+    Vps_printf("videnc2DynamicParams -> sampleAspectRatioWidth  : %d\n", dynamicParams->videnc2DynamicParams.sampleAspectRatioWidth);
+    Vps_printf("videnc2DynamicParams -> ignoreOutbufSizeFlag    : %d\n", dynamicParams->videnc2DynamicParams.ignoreOutbufSizeFlag);
+    Vps_printf("videnc2DynamicParams -> lateAcquireArg          : %d\n", dynamicParams->videnc2DynamicParams.lateAcquireArg);
+
+  Vps_printf("rateControlParams -> rateControlParamsPreset        : %d\n", dynamicParams->rateControlParams.rateControlParamsPreset);
+    Vps_printf("rateControlParams -> scalingMatrixPreset            : %d\n", dynamicParams->rateControlParams.scalingMatrixPreset);
+    Vps_printf("rateControlParams -> rcAlgo                         : %d\n", dynamicParams->rateControlParams.rcAlgo);
+    Vps_printf("rateControlParams -> qpI                            : %d\n", dynamicParams->rateControlParams.qpI);
+    Vps_printf("rateControlParams -> qpMaxI                         : %d\n", dynamicParams->rateControlParams.qpMaxI);
+    Vps_printf("rateControlParams -> qpMinI                         : %d\n", dynamicParams->rateControlParams.qpMinI);
+    Vps_printf("rateControlParams -> qpP                            : %d\n", dynamicParams->rateControlParams.qpP);
+    Vps_printf("rateControlParams -> qpMaxP                         : %d\n", dynamicParams->rateControlParams.qpMaxP);
+    Vps_printf("rateControlParams -> qpMinP                         : %d\n", dynamicParams->rateControlParams.qpMinP);
 
     return 0;
 }
@@ -1255,7 +1283,7 @@ static Int enclink_h264_print_dynamic_params(UInt32 chId, IH264ENC_DynamicParams
     Vps_printf(" \n");
     Vps_printf("--------- CH %d : H264 ENC : Dynamic Params -------\n", chId);
     Vps_printf(" \n");
-    enclink_print_dynamic_params(&dynamicParams->videnc2DynamicParams);
+    enclink_print_dynamic_params(dynamicParams);
     Vps_printf(" \n");
     Vps_printf("rateControlParams -> rateControlParamsPreset        : %d\n", dynamicParams->rateControlParams.rateControlParamsPreset);
     Vps_printf("rateControlParams -> scalingMatrixPreset            : %d\n", dynamicParams->rateControlParams.scalingMatrixPreset);
@@ -1688,9 +1716,9 @@ Int32 EncLinkH264_algSetConfig(EncLink_algObj * algObj)
                 algObj->u.h264AlgIfObj.status.videnc2Status.extendedError);
         }*/
 
-		enclink_h264_print_dynamic_params(0,&algObj->u.h264AlgIfObj.dynamicParams);
+		//enclink_h264_print_dynamic_params(0,&algObj->u.h264AlgIfObj.dynamicParams);
 
-		EncLinkH264_algGetDynamicParams(algObj);
+		//EncLinkH264_algGetDynamicParams(algObj);
 
      }
 
@@ -1698,9 +1726,9 @@ Int32 EncLinkH264_algSetConfig(EncLink_algObj * algObj)
     return (status);
 }
 
-Int32 EncLinkH264_algGetDynamicParams(EncLink_algObj * algObj)
+static Int32 EncLinkH264_algGetDynamicParams(Int32 chId,EncLink_algObj * algObj)
 {
-    Int retVal = ENC_LINK_S_SUCCESS, chId;
+    Int retVal = ENC_LINK_S_SUCCESS;
     IH264ENC_DynamicParams dynamicParams;
     IH264ENC_Status status;
 
@@ -1719,12 +1747,14 @@ Int32 EncLinkH264_algGetDynamicParams(EncLink_algObj * algObj)
             status.videnc2Status.extendedError);
 	}	
 
-	enclink_h264_print_dynamic_params(99, (IH264ENC_DynamicParams*)&status.videnc2Status.encDynamicParams);
+	Vps_printf("--------- CH %d : H264 ENC : Dynamic Params -------\n", chId);
+	enclink_print_dynamic_params((IH264ENC_DynamicParams*)&status.videnc2Status.encDynamicParams);
+	//enclink_h264_print_dynamic_params(99, (IH264ENC_DynamicParams*)&status.videnc2Status.encDynamicParams);
 	return 0;
 }
 Int32 EncLinkH264_algGetConfig(EncLink_algObj * algObj)
 {
-    Int retVal = ENC_LINK_S_SUCCESS, chId;
+    Int retVal = ENC_LINK_S_SUCCESS;
     IH264ENC_DynamicParams dynamicParams;
     IH264ENC_Status status;
 
@@ -1744,7 +1774,7 @@ Int32 EncLinkH264_algGetConfig(EncLink_algObj * algObj)
             status.videnc2Status.extendedError);
         }
 
-        chId = algObj->u.h264AlgIfObj.channelID;
+        //chId = algObj->u.h264AlgIfObj.channelID;
 
         enclink_h264_print_dynamic_params(99, (IH264ENC_DynamicParams*)&status.videnc2Status.encDynamicParams);
 

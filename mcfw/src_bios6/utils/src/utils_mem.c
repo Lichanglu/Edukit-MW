@@ -173,7 +173,6 @@ Int32 Utils_memFrameAlloc(FVID2_Format * pFormat,
 
         /* for all 'numFrames' memory is contigously allocated */
         pBaseAddr = Utils_memAlloc(size * numFrames, VPS_BUFFER_ALIGNMENT);
-
         if (pBaseAddr == NULL)
         {
             status = -1;                                   /* Error in
@@ -281,6 +280,7 @@ Ptr Utils_memAlloc(UInt32 size, UInt32 align)
         /* if memory allocation in Frame buf heap failed, then try in tiler buf heap
             But tiler needs to be disabled for this to work
         */
+
         if (SystemTiler_isAllocatorDisabled())
         {
             #ifdef UTILS_MEM_DEBUG
@@ -289,7 +289,6 @@ Ptr Utils_memAlloc(UInt32 size, UInt32 align)
                 SystemTiler_getFreeSize()
                 );
             #endif
-
             Error_init(eb);
             addr = SystemTiler_allocRaw(size, align);
         }
@@ -327,9 +326,8 @@ Ptr Utils_memAlloc(UInt32 size, UInt32 align)
         &&
         gUtils_memClearBuf[UTILS_MEM_VID_FRAME_BUF_HEAP])
     {
-        memset(addr, 0x80, size);
+	memset(addr, 0x80, size);
     }
-
     return addr;
 }
 

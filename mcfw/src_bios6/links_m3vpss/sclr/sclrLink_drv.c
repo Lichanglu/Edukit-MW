@@ -8,6 +8,9 @@
 #include "sclrLink_priv.h"
 
 // #define SCLR_LINK_QUEUE_REQ
+
+static Bool  SclrLink_doSkipFrame(SclrLink_ChObj *pChObj, Int32 chId);
+
 static
 Int32 SclrLink_drvDmaCreate(SclrLink_Obj * pObj)
 {
@@ -185,7 +188,7 @@ Int32 SclrLink_resetStatistics(SclrLink_Obj * pObj)
 
 
 /* Add ScaleMode Full screen and  proportion sclr */
-Int32 SclrLink_drvSetScaleMode(SclrLink_Obj * pObj, Bool ScaleMode)
+Int32 SclrLink_drvSetScaleMode(SclrLink_Obj * pObj, SclrLink_SclrMode *pSclrMode)
 {
 
 	SclrLink_chDynamicSetOutRes params[SCLR_LINK_MAX_CH];
@@ -193,16 +196,24 @@ Int32 SclrLink_drvSetScaleMode(SclrLink_Obj * pObj, Bool ScaleMode)
 	SclrLink_ChObj *pChObj;
 	UInt32 chId;
 	UInt key;
-	
-	key = Hwi_disable();
-					
-	/* 设置等比缩放模式 */
-	if((FALSE == pObj->StretchMod) && (TRUE == ScaleMode))
+	Bool SclrMode = pSclrMode->SclrMode;
+	chId = pSclrMode->chId;
+
+	if(chId >= SCLR_LINK_MAX_CH)
 	{
-		pObj->StretchMod = TRUE;
-		for (chId = 0; chId < pObj->inQueInfo.numCh; chId++)
+		return FVID2_EFAIL;
+	}
+
+	key = Hwi_disable();
+
+	pChObj = &pObj->chObj[chId];
+
+	/* 设置等比缩放模式 */
+	if((FALSE == pChObj->StretchMod) && (TRUE == SclrMode))
+	{
+		pChObj->StretchMod = TRUE;
+	//	for (chId = 0; chId < pObj->inQueInfo.numCh; chId++)
 		{
-			pChObj = &pObj->chObj[chId];
 			params[chId].chId   = chId;
 			params[chId].width  = pChObj->sclrRtOutFrmPrm.width;
 			params[chId].height = pChObj->sclrRtOutFrmPrm.height;
@@ -211,16 +222,15 @@ Int32 SclrLink_drvSetScaleMode(SclrLink_Obj * pObj, Bool ScaleMode)
 
 			Vps_printf("SclrMode = TRUE CH[%d] outwidth[%d] outheight[%d] pitch[%d]",\
 				params[chId].chId,params[chId].width,params[chId].height,params[chId].pitch[0]);
-			
+
 			SclrLink_drvSetChDynamicOutputRes(pObj, &params[chId]);
-		}		
+		}
 	}
-	else if((TRUE == pObj->StretchMod) && (FALSE == ScaleMode)) 
+	else if((TRUE == pChObj->StretchMod) && (FALSE == SclrMode))
 	{
-		pObj->StretchMod = FALSE;
-		for (chId = 0; chId < pObj->inQueInfo.numCh; chId++)
+		pChObj->StretchMod = FALSE;
+		//for (chId = 0; chId < pObj->inQueInfo.numCh; chId++)
 		{
-			pChObj = &pObj->chObj[chId];
 			params[chId].chId   = chId;
 			params[chId].width  = pChObj->outFormat.width;
 			params[chId].height = pChObj->outFormat.height;
@@ -229,15 +239,63 @@ Int32 SclrLink_drvSetScaleMode(SclrLink_Obj * pObj, Bool ScaleMode)
 
 			Vps_printf("SclrMode = TRUE CH[%d] outwidth[%d] outheight[%d] pitch[%d]",\
 				params[chId].chId,params[chId].width,params[chId].height,params[chId].pitch[0]);
-			
+
 			SclrLink_drvSetChDynamicOutputRes(pObj, &params[chId]);
-		}		
+		}
 	}
 	else
 	{
-		
+
 	}
-	
+
+	Hwi_restore(key);
+	return FVID2_SOK;
+}
+
+Int32 SclrLink_drvSetInChInfo(SclrLink_Obj * pObj, System_LinkChInfo2 *pchinfo)
+{
+	System_LinkChInfo *rtChInfo;
+	UInt key;
+
+	key = Hwi_disable();
+
+	if(pchinfo->chid < pObj->inQueInfo.numCh){
+		pObj->chObj[pchinfo->chid].chRtOutInfoUpdate = TRUE;
+		pObj->chObj[pchinfo->chid].chRtInInfoUpdate = TRUE;
+		rtChInfo = &pObj->chObj[pchinfo->chid].rtChannelInfo;
+		rtChInfo->startX = pchinfo->chinfo.startX;
+		rtChInfo->startY = pchinfo->chinfo.startY;
+		rtChInfo->width = pchinfo->chinfo.width;
+		rtChInfo->height = pchinfo->chinfo.height;
+		rtChInfo->pitch[0]= pchinfo->chinfo.pitch[0];
+		rtChInfo->pitch[1] = pchinfo->chinfo.pitch[1];
+		Vps_printf("[SclrLink_drvSetInChInfo] chid:[%d] chRtInInfoUpdate:%d,x:%d,y:%d,w:%d,h:%d,pitch[0]:%d\n",
+					pchinfo->chid,
+					pObj->chObj[pchinfo->chid].chRtInInfoUpdate,
+					rtChInfo->startX,
+					rtChInfo->startY,
+					rtChInfo->width,
+					rtChInfo->height,
+					rtChInfo->pitch[0]);
+	}
+
+	Hwi_restore(key);
+	return FVID2_SOK;
+}
+
+Int32 SclrLink_drvSetAutoGetInChInfo(SclrLink_Obj * pObj, Int32 chId)
+{
+	UInt key;
+
+	key = Hwi_disable();
+
+	if(chId >= 0 && chId < pObj->inQueInfo.numCh){
+		pObj->chObj[chId].chRtInInfoUpdate = FALSE;
+		Vps_printf("[SclrLink_drvSetInChInfo] chid:[%d] chRtInInfoUpdate:%d\n",
+					chId,
+					pObj->chObj[chId].chRtInInfoUpdate);
+	}
+
 	Hwi_restore(key);
 	return FVID2_SOK;
 }
@@ -535,7 +593,6 @@ Int32 SclrLink_drvCreateOutObj(SclrLink_Obj * pObj)
 	pFormat->bpp            = FVID2_BPP_BITS16;
 	pFormat->reserved       = NULL;
 	
-	
 	/* alloc buffer of max possible size but use only what is needed for a
 	 * given resolution */
 	if (pObj->createArgs.tilerEnable)
@@ -551,7 +608,6 @@ Int32 SclrLink_drvCreateOutObj(SclrLink_Obj * pObj)
 		                             pOutObj->outNumFrames);
 	}
 	UTILS_assert(status == FVID2_SOK);
-	
 	i = 0;
 	for (frameId = 0; frameId < pObj->outObj.outNumFrames; frameId++)
 	{
@@ -574,7 +630,6 @@ Int32 SclrLink_drvCreateOutObj(SclrLink_Obj * pObj)
 		}
 #endif
 	}
-	
 	pObj->info.numQue = SCLR_LINK_MAX_OUT_QUE;
 	pObj->info.queInfo[0].numCh = pObj->inQueInfo.numCh;
 	
@@ -614,7 +669,6 @@ Int32 SclrLink_drvCreateOutObj(SclrLink_Obj * pObj)
 		pOutChInfo->pitch[2] = pFormat->pitch[2];
 		pOutChInfo->scanFormat = (FVID2_ScanFormat) pFormat->scanFormat;
 	}
-	
 	return (status);
 }
 
@@ -693,10 +747,18 @@ Int32 SclrLink_drvCreateChObj(SclrLink_Obj * pObj, UInt32 chId)
 	pChObj->frameSkipCtx.firstTime = TRUE;
 	pChObj->frameSkipCtx.inputFrameRate = pObj->createArgs.inputFrameRate;
 	pChObj->frameSkipCtx.outputFrameRate = pObj->createArgs.outputFrameRate;
+
+	pChObj->frame_cnt=0;
+	pChObj->start_time=0;
+	pChObj->skip_flag=0;
+	pChObj->prev_fps=0;
+	pChObj->frame_mis=0;
 	
 	pChObj->doFrameDrop = FALSE;
 	
 	pChObj->enableOut = TRUE;
+
+	pChObj->StretchMod = FALSE;
 	
 	pOutChInfo = &pObj->info.queInfo[0].chInfo[chId];
 	
@@ -724,6 +786,7 @@ Int32 SclrLink_drvCreateChObj(SclrLink_Obj * pObj, UInt32 chId)
 	
 	/* Initilaize the rtparm ouput resolution from outObj */
 	pChObj->chRtOutInfoUpdate = FALSE;
+	pChObj->chRtInInfoUpdate = FALSE;
 	
 	pChObj->isSkipOneFidType = FALSE;
 	pChObj->skipFidType = FVID2_FID_BOTTOM;
@@ -812,7 +875,7 @@ Int32 SclrLink_drvCreateFvidObj(SclrLink_Obj * pObj)
 		/* assume all CHs are of same input size, format, pitch */
 		pChInfo = &pObj->inQueInfo.chInfo[chId];
 		
-		Vps_printf("chid[%d] inFmt.width[%d] inFmt.height[%d] inFmt.pitch0[%d] inFmt.pitch2[%d]",\
+		Vps_printf("chid[%d] inFmt.width[%d] inFmt.height[%d] inFmt.pitch0[%d] inFmt.pitch1[%d]",\
 		chId,pChInfo->width,pChInfo->height,pChInfo->pitch[0],pChInfo->pitch[1]);
 		
 		pDrvChPrm->inFmt.channelNum = chId;
@@ -829,7 +892,7 @@ Int32 SclrLink_drvCreateFvidObj(SclrLink_Obj * pObj)
 		pDrvChPrm->inFmt.bpp = FVID2_BPP_BITS16;
 		
 		memcpy(&pDrvChPrm->outFmt, &pObj->outObj.outFormat, sizeof(FVID2_Format));
-		Vps_printf("chid[%d] outFmt.width[%d] outFmt.height[%d] outFmt.pitch0[%d] outFmt.pitch2[%d]",\
+		Vps_printf("chid[%d] outFmt.width[%d] outFmt.height[%d] outFmt.pitch0[%d] outFmt.pitch1[%d]",\
 			chId,pDrvChPrm->outFmt.width,pDrvChPrm->outFmt.height,pDrvChPrm->outFmt.pitch[0],pDrvChPrm->outFmt.pitch[1]);
 
 		pDrvChPrm->inMemType = pChInfo->memType;
@@ -901,10 +964,10 @@ Int32 SclrLink_drvCreateFvidObj(SclrLink_Obj * pObj)
 	switch(pObj->createArgs.pathId)
 	{
 		case SCLR_LINK_SC5:
-			pathId = VPS_M2M_INST_SEC0_SC5_WB2;
+			pathId = VPS_M2M_INST_SEC0_SC3_VIP0;//VPS_M2M_INST_SEC0_SC5_WB2;
 			break;
 		case SCLR_LINK_SEC0_SC3:
-			pathId = VPS_M2M_INST_SEC0_SC3_VIP0;
+			pathId = VPS_M2M_INST_SEC1_SC4_VIP1;
 			break;
 			
 		default
@@ -977,6 +1040,7 @@ Int32 SclrLink_drvQueueFramesToChQue(SclrLink_Obj * pObj)
                                                (pChObj->nextFid == 0) ||
                                                (pChObj->isSkipOneFidType))
                 pChObj->doFrameDrop = Utils_doSkipFrame(&(pChObj->frameSkipCtx));
+		//pChObj->doFrameDrop = SclrLink_doSkipFrame(pChObj,pFrame->channelNum);
             
             /* frame skipped due to user setting */
             if(pChObj->doFrameDrop)
@@ -1048,11 +1112,11 @@ Int32 SclrLink_drvCreate(SclrLink_Obj * pObj, SclrLink_CreateParams * pPrm)
 	
 	UTILS_MEMLOG_USED_START();
 	memcpy(&pObj->createArgs, pPrm, sizeof(*pPrm));
-	
+
 	status = System_linkGetInfo(pPrm->inQueParams.prevLinkId, &pObj->inTskInfo);
 	UTILS_assert(status == FVID2_SOK);
 	UTILS_assert(pPrm->inQueParams.prevLinkQueId < pObj->inTskInfo.numQue);
-	
+
 	memcpy(&pObj->inQueInfo,
 	       &pObj->inTskInfo.queInfo[pPrm->inQueParams.prevLinkQueId],
 	       sizeof(pObj->inQueInfo));
@@ -1064,7 +1128,7 @@ Int32 SclrLink_drvCreate(SclrLink_Obj * pObj, SclrLink_CreateParams * pPrm)
 		pObj->createArgs.tilerEnable = FALSE;
 	}
 #endif
-	
+
 	cpuRev = Vps_platformGetCpuRev();
 	
 	for (chId = 0; chId < pObj->inQueInfo.numCh; chId++)
@@ -1091,7 +1155,7 @@ Int32 SclrLink_drvCreate(SclrLink_Obj * pObj, SclrLink_CreateParams * pPrm)
 			}
 		}
 	}
-	
+
 	pObj->inFrameGetCount = 0;
 	pObj->inFramePutCount = 0;
 	pObj->outFrameGetCount = 0;
@@ -1107,25 +1171,20 @@ Int32 SclrLink_drvCreate(SclrLink_Obj * pObj, SclrLink_CreateParams * pPrm)
 	pObj->givenInFrames = 0x0;
 	pObj->returnedInFrames = 0x0;
 	pObj->loadUpsampleCoeffs = FALSE;
-	pObj->StretchMod = FALSE;
+//	pObj->StretchMod = FALSE;
 	SclrLink_resetStatistics(pObj);
-	
 	
 	Semaphore_Params_init(&semParams);
 	semParams.mode = Semaphore_Mode_BINARY;
 	pObj->complete = Semaphore_create(0u, &semParams, NULL);
 	UTILS_assert(pObj->complete != NULL);
-	
 	SclrLink_drvCreateOutObj(pObj);
-	
 	SclrLink_drvDmaCreate(pObj);
-	
 	Vps_printf("pObj->inQueInfo.numCh = %d\n",pObj->inQueInfo.numCh);
 	for (chId = 0; chId < pObj->inQueInfo.numCh; chId++)
 	{
 		SclrLink_drvCreateChObj(pObj, chId);
 	}
-	
 	SclrLink_drvCreateFvidObj(pObj);
 //    SclrLink_drvCreateScDrv(pObj);
 	SclrLink_drvCreateReqObj(pObj);
@@ -1197,8 +1256,11 @@ Int32 SclrLink_drvMakeFrameLists(SclrLink_Obj * pObj,
 				UTILS_assert (pInFrame->channelNum == chId);
 				rtChInfo = &pChObj->rtChannelInfo;
 				
-				if ((pInFrameInfo != NULL) &&
-				        (pInFrameInfo->rtChInfoUpdate == TRUE))
+				if (
+					(pInFrameInfo != NULL)
+					&& (pInFrameInfo->rtChInfoUpdate == TRUE)
+				    && (FALSE == pChObj->chRtInInfoUpdate)
+				   )
 				{
 #if 0
 					Vps_printf("sclr: old: %d x %d [%d,%d],   new: %d x %d [%d,%d]\n",
@@ -1261,11 +1323,13 @@ Int32 SclrLink_drvMakeFrameLists(SclrLink_Obj * pObj,
 					Vps_printf("SclrLink_drvUpdateRtParams!!!! outwidth[%d] outheight[%d] pitch0[%d] inwidth[%d] inheight[%d] pitch0[%d] %d\n",\
 						pChObj->sclrRtOutFrmPrm.width,pChObj->sclrRtOutFrmPrm.height,pChObj->sclrRtOutFrmPrm.pitch[0],\
 						pChObj->sclrRtInFrmPrm.width,pChObj->sclrRtInFrmPrm.height,pChObj->sclrRtInFrmPrm.pitch[0],chId);
+					Vps_printf("SclrLink_drvUpdateRtParams:inx:%d,iny:%d,chId:%d",
+						pChObj->rtChannelInfo.startX,pChObj->rtChannelInfo.startY,chId);
 					
 					pInFrame->perFrameCfg = &pChObj->sclrRtPrm;
 					pChObj->sclrRtPrm.inFrmPrms  = &pChObj->sclrRtInFrmPrm;
 
-					if(TRUE == pObj->StretchMod)
+					if(TRUE == pChObj->StretchMod)
 					{
 						SclrLink_CalSclrMode CalSclrMode;
 						UInt32 outOffset = 0;
@@ -1328,6 +1392,8 @@ Int32 SclrLink_drvMakeFrameLists(SclrLink_Obj * pObj,
 				pChObj->outFrameSkipCount++;
 				frameList.frames[freeFrameNum] = pInFrame;
 				freeFrameNum++;
+				if(pChObj->frame_cnt > 0 )
+					pChObj->frame_cnt -- ;
 			}
 		}
 	}
@@ -1636,6 +1702,8 @@ Int32 SclrLink_SetFrameRate(SclrLink_Obj * pObj, SclrLink_ChFpsParams * params)
 	pChObj->frameSkipCtx.firstTime = TRUE;
 	pChObj->frameSkipCtx.inputFrameRate = params->inputFrameRate;
 	pChObj->frameSkipCtx.outputFrameRate = params->outputFrameRate;
+
+	Vps_printf("==========SclrLink_SetFrameRate:chId:%d,outputFrameRate:%d\n",params->chId,params->outputFrameRate);
 	
 	return (status);
 }
@@ -1704,26 +1772,26 @@ Int32 SclrLink_drvSetChDynamicOutputRes(SclrLink_Obj * pObj,
 	Int32 status = FVID2_SOK;
 	SclrLink_ChObj *pChObj;
 	UInt32 chId;
-	UInt32 width;
-    UInt32 height;
-	SclrLink_CalSclrMode CalSclrMode;
+//	UInt32 width;
+//    UInt32 height;
+//	SclrLink_CalSclrMode CalSclrMode;
 	FVID2_Format *pFormat;
-	UInt32 outOffset = 0;
+//	UInt32 outOffset = 0;
 
 	if (params->chId < SCLR_LINK_MAX_CH)
 	{
 		chId = params->chId;
 		pChObj = &pObj->chObj[chId];
-		
+
 		/* 设置输出格式 */
-		pFormat = &pChObj->outFormat;	
+		pFormat = &pChObj->outFormat;
 		pFormat->width  = params->width;
 		pFormat->height = params->height;
 		pFormat->pitch[0] = params->pitch[0];
 		pFormat->pitch[1] = params->pitch[1];
-		
-		if(TRUE == pObj->StretchMod)
-		{	
+
+		if(TRUE == pChObj->StretchMod)
+		{
 			#if 0
 			CalSclrMode.SrcWidth  = pChObj->sclrRtInFrmPrm.width ;
 			CalSclrMode.SrcHeight = pChObj->sclrRtInFrmPrm.height;
@@ -1733,7 +1801,7 @@ Int32 SclrLink_drvSetChDynamicOutputRes(SclrLink_Obj * pObj,
 
 			/* 计算等比缩放后的宽高 */
 			outOffset = SclrLink_CalculationSclrMode(CalSclrMode, &width, &height);
-			
+
 			/* 更改实时参数 */
 			pChObj->sclrRtOutFrmPrm.width    = width;
 			pChObj->sclrRtOutFrmPrm.height   = height;
@@ -1742,7 +1810,7 @@ Int32 SclrLink_drvSetChDynamicOutputRes(SclrLink_Obj * pObj,
 			pChObj->outOffset = outOffset;
 			#endif
 			pChObj->chRtOutInfoUpdate = TRUE;
-			
+
 		}
 		else
 		{
@@ -1773,5 +1841,57 @@ Int32 SclrLink_drvDynamicSkipFidType(SclrLink_Obj * pObj,
 		pChObj->skipFidType = params->fidType;
 	}
 	return (status);
+}
+
+#define 	INTERVAL_TIME      1000
+#define MAX_INTERVAL_TIME	660000
+#define	MAX_MP_TIME		720000
+#define 	MP_INTERVAL_TIME      3000
+#define  STD_FPS_30			2997
+#define  STD_FPS_25			2500
+#define FRAME_MAX_CNT		40000
+static Bool  SclrLink_doSkipFrame(SclrLink_ChObj *pChObj, Int32 chId)
+{	
+	//UInt32 fps=0;
+	UInt32 timeout=0;
+	UInt32 std_fps=0;
+	UInt32 temp_frame_cnt=0;
+	UInt32 currTime =  Utils_getCurTimeInMsec();
+	 if( 0 ==  pChObj->start_time  ||  pChObj->prev_fps !=pChObj->frameSkipCtx.outputFrameRate){ 
+		  pChObj->prev_fps= pChObj->frameSkipCtx.outputFrameRate;
+		  pChObj->start_time = currTime;
+		  pChObj->frame_cnt=0;
+		 pChObj->frame_mis=0;
+		pChObj->skip_flag = currTime;
+	 }
+	 if( 30 == pChObj->frameSkipCtx.outputFrameRate){
+		std_fps = STD_FPS_30;
+	 }else{
+		 std_fps = STD_FPS_25;
+	 }
+	 pChObj->frame_cnt++;
+
+	 timeout = (currTime - pChObj->start_time);
+
+	if((pChObj->frame_cnt > FRAME_MAX_CNT) || (timeout > (FRAME_MAX_CNT*100*1000)/std_fps)){
+		UInt32 temp_fps2= ((pChObj->frame_mis+pChObj->frame_cnt)*1000*100)/(timeout);		
+		Vps_printf("------11chId=%d,Total Frame=%d, Time=%d, frame_mis=%d-,AveFps=%0.3f-----Infps=%d------\n",
+			chId,pChObj->frame_cnt,timeout,(pChObj->frame_mis),(float)(pChObj->frame_cnt*1000.0)/(Utils_getCurTimeInMsec()-pChObj->skip_flag),temp_fps2);
+		pChObj->frame_cnt = 0;
+		pChObj->start_time = currTime;
+		pChObj->frame_mis = 0;
+		pChObj->skip_flag=currTime;
+		timeout = 0;
+	}
+
+	temp_frame_cnt=(std_fps*timeout)/(100*1000);
+
+	if(  pChObj->frame_cnt  > (temp_frame_cnt+1 )){
+		pChObj->frame_mis++;
+		 pChObj->frame_cnt--;	
+		return TRUE;
+	}
+	
+	return FALSE;
 }
 

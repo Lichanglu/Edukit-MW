@@ -20,6 +20,7 @@ UInt8 gAdjustEncInputFrameStack[ENC_LINK_OBJ_MAX][DEC_LINK_TSK_STACK_SIZE];
 EncLink_Obj gEncLink_obj[ENC_LINK_OBJ_MAX];
 
 Utils_TskHndl gAdjustEncInputFrameTsk[ENC_LINK_OBJ_MAX];
+UInt32 gEncLinkRunCount;
 
 Void enc_inputframe_adjust_tsk(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
 {
@@ -65,6 +66,7 @@ Void EncLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
     UInt32 cmd = Utils_msgGetCmd(pMsg);
     Bool ackMsg, done;
     Int32 status;
+    UInt32 flushCmds[2];
     EncLink_Obj *pObj;
 
     pObj = (EncLink_Obj *) pTsk->appData;
@@ -85,7 +87,8 @@ Void EncLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
     Utils_encdecHdvicpPrfInit();
     done = FALSE;
     ackMsg = FALSE;
-
+	
+   gEncLinkRunCount = 0;
     while (!done)
     {
         status = Utils_tskRecvMsg(pTsk, &pMsg, BIOS_WAIT_FOREVER);
@@ -105,7 +108,12 @@ Void EncLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
             case ENC_LINK_CMD_GET_PROCESSED_DATA:
                 Utils_tskAckOrFreeMsg(pMsg, status);
 
+ 		flushCmds[0] = ENC_LINK_CMD_GET_PROCESSED_DATA;
+ 		Utils_tskFlushMsg(pTsk, flushCmds, 1);
+
                 EncLink_codecGetProcessedDataMsgHandler(pObj);
+				
+		  gEncLinkRunCount++;
                 break;
             case ENC_LINK_CMD_GET_CODEC_PARAMS:
                 {
@@ -265,7 +273,9 @@ Void EncLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
                 break;
 
 	case ENC_LINK_CMD_RESET_SKIP_FRAME:
+		
 		EncLink_resetSkipFrame(pObj);
+		Utils_tskAckOrFreeMsg(pMsg, status);
 		break;
 
             case SYSTEM_CMD_STOP:

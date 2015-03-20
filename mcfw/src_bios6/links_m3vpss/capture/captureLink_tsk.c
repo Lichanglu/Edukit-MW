@@ -91,7 +91,7 @@ Int32 CaptureLink_tskRun(CaptureLink_Obj * pObj, Utils_TskHndl * pTsk,
     /* RUN loop done and ackMsg status */
     runDone = FALSE;
     runAckMsg = FALSE;
-
+	
     /* RUN state loop */
     while (!runDone)
     {
@@ -126,6 +126,7 @@ Int32 CaptureLink_tskRun(CaptureLink_Obj * pObj, Utils_TskHndl * pTsk,
                      * or free it again */
                     runAckMsg = FALSE;
                 }
+
                 break;
 
             case CAPTURE_LINK_CMD_FORCE_RESET:
@@ -258,38 +259,38 @@ Int32 CaptureLink_tskRun(CaptureLink_Obj * pObj, Utils_TskHndl * pTsk,
                             );
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
                 break;
-			case CAPTURE_LINK_CMD_A8_DETECT_VIDEO:				
-				{
-					Vps_printf("vpss get resolution change!\n");
-					VCAP_VIDEO_SOURCE_CH_STATUS_S *pvideoparams;
-					CaptureLink_InstObj *pInst;
-					VCAP_VIDEO_SOURCE_CH_STATUS_S *pVidStatus;
-					UInt key;
-					pvideoparams = (VCAP_VIDEO_SOURCE_CH_STATUS_S *)Utils_msgGetPrm(pRunMsg);
+		case CAPTURE_LINK_CMD_A8_DETECT_VIDEO:				
+			{
+				Vps_printf("vpss get resolution change!\n");
+				VCAP_VIDEO_SOURCE_CH_STATUS_S *pvideoparams;
+				CaptureLink_InstObj *pInst;
+				VCAP_VIDEO_SOURCE_CH_STATUS_S *pVidStatus;
+				UInt key;
+				pvideoparams = (VCAP_VIDEO_SOURCE_CH_STATUS_S *)Utils_msgGetPrm(pRunMsg);
 
-					key = Hwi_disable();
-					pInst = &pObj->instObj[pvideoparams->vipInstId];
-					pVidStatus = &pInst->vidDecCurStatus[pvideoparams->chId];
+				key = Hwi_disable();
+				pInst = &pObj->instObj[pvideoparams->vipInstId];
+				pVidStatus = &pInst->vidDecCurStatus[pvideoparams->chId];
 
-					Vps_printf("resolution change, old width=%d,heigh=%d,new width=%d,heigh=%d\n",
-						pVidStatus->frameWidth,pVidStatus->frameHeight,pvideoparams->frameWidth,
-						pvideoparams->frameHeight);
-					pVidStatus->chId          = pvideoparams->chId;
-					pVidStatus->vipInstId     = pvideoparams->vipInstId;	
-					pVidStatus->isVideoDetect = pvideoparams->isVideoDetect;
-	                pVidStatus->frameWidth    = pvideoparams->frameWidth;
-	                pVidStatus->frameHeight   = pvideoparams->frameHeight;
-	                pVidStatus->frameInterval = pvideoparams->frameInterval;
-	                pVidStatus->isInterlaced  = pvideoparams->isInterlaced;
-				
-					Vps_printf("pVidStatus->chId = %d pVidStatus->vipInstId = %d pVidStatus->isVideoDetect = %d\n",pVidStatus->chId,pVidStatus->vipInstId,pVidStatus->isVideoDetect);
-					Hwi_restore(key);
-					
-	                /* ACK or free message before proceding */
-	                Utils_tskAckOrFreeMsg(pRunMsg, status);
-				}
-				
-				break;
+				Vps_printf("resolution change, old width=%d,heigh=%d,new width=%d,heigh=%d\n",
+					pVidStatus->frameWidth,pVidStatus->frameHeight,pvideoparams->frameWidth,
+					pvideoparams->frameHeight);
+				pVidStatus->chId          = pvideoparams->chId;
+				pVidStatus->vipInstId     = pvideoparams->vipInstId;	
+				pVidStatus->isVideoDetect = pvideoparams->isVideoDetect;
+				pVidStatus->frameWidth    = pvideoparams->frameWidth;
+				pVidStatus->frameHeight   = pvideoparams->frameHeight;
+				pVidStatus->frameInterval = pvideoparams->frameInterval;
+				pVidStatus->isInterlaced  = pvideoparams->isInterlaced;
+
+				Vps_printf("pVidStatus->chId = %d pVidStatus->vipInstId = %d pVidStatus->isVideoDetect = %d,isInterlaced=%d\n",pVidStatus->chId,pVidStatus->vipInstId,pVidStatus->isVideoDetect,pVidStatus->isInterlaced);
+				Hwi_restore(key);
+
+				/* ACK or free message before proceding */
+				Utils_tskAckOrFreeMsg(pRunMsg, status);
+			}
+
+			break;
 #if 0
 			case CAPTURE_LINK_CMD_SET_OUTPUT_FRAMERATE:
                 status = CaptureLink_drvSet_Minni_FrameRate(

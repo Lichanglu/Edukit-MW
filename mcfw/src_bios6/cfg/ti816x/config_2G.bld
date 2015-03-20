@@ -208,20 +208,22 @@ L2_SRAM_RUN_ADDR           = 0x20004000;
 DUCATI_WB_WA_ADDR          = 0x20000000;
 
 /* first 512MB */
-LINUX_SIZE                 = 462*MB;
+LINUX_SIZE                 = 128*MB;
+SR1_SIZE                   = 315.5*MB;
 SR3_INTRADUCATI_IPC_SIZE   = 1*MB;
-VIDEO_M3_CODE_SIZE         = 2.5*MB;
-VIDEO_M3_BSS_SIZE		   = 12*MB;
-VIDEO_M3_DATA_SIZE         = 1*MB;
-DSS_M3_CODE_SIZE           = 2*MB;
-DSS_M3_BSS_SIZE			   = 14*MB;
-DSS_M3_DATA_SIZE           = 2*MB;
-DSP_CODE_SIZE              = 1.5*MB;
-DSP_DATA_SIZE              = 14*MB;
+VIDEO_M3_CODE_SIZE         = 7.5*MB;
+VIDEO_M3_DATA_SIZE         = 17*MB;
+DSS_M3_CODE_SIZE           = 8.5*MB;
+DSS_M3_DATA_SIZE           = 19*MB;
+DSP_CODE_SIZE              = 1*MB;
+DSP_DATA_SIZE              = 14.5*MB;
+
 
 /* second 512MB */
 /* Tiler Buffers in the bottom 512MB */
-SR2_FRAME_BUFFER_SIZE      = 505*MB;
+/*TILER_SIZE                 = 256*MB;*/ /* (128+128) - MUST be aligned on 128MB boundary */
+SR2_FRAME_BUFFER_SIZE      = 489*MB;
+SR0_SIZE                   = 16*MB;
 HDVPSS_DESC_SIZE           = 2*MB;
 HDVPSS_SHARED_SIZE         = 2*MB;
 NOTIFY_SHARED_SIZE         = 2*MB;
@@ -229,48 +231,30 @@ REMOTE_DEBUG_SIZE          = 1*MB;
 
 
 /* third and fourth 512 MB */
-LINUX_SIZE_SEGMENT2        = 1024*MB;
-
-SR0_SIZE                   = 128*MB;
-SR1_SIZE                   = 128*MB;
-TILER_SIZE                 = 256*MB; /* (128+128) - MUST be aligned on 128MB boundary */
-
+LINUX_SIZE_SEGMENT2        = 768*MB;
+TILER_SIZE                 = 256*MB;
 
 /* first 512MB */
 LINUX_ADDR                 = DDR3_ADDR;
-SR3_INTRADUCATI_IPC_ADDR   = LINUX_ADDR                 + LINUX_SIZE;
+SR1_ADDR                   = LINUX_ADDR                 + LINUX_SIZE;
+SR3_INTRADUCATI_IPC_ADDR   = SR1_ADDR                   + SR1_SIZE;
 VIDEO_M3_CODE_ADDR         = SR3_INTRADUCATI_IPC_ADDR   + SR3_INTRADUCATI_IPC_SIZE;
 VIDEO_M3_DATA_ADDR         = VIDEO_M3_CODE_ADDR         + VIDEO_M3_CODE_SIZE;
-VIDEO_M3_BSS_ADDR          = VIDEO_M3_DATA_ADDR         + VIDEO_M3_DATA_SIZE;
-VIDEO_M3_BSS_MAPPED_ADDR  = (VIDEO_M3_BSS_ADDR - DDR3_ADDR) + DUCATI_WB_WA_ADDR;
-DSS_M3_CODE_ADDR           = VIDEO_M3_BSS_ADDR          + VIDEO_M3_BSS_SIZE;
+DSS_M3_CODE_ADDR           = VIDEO_M3_DATA_ADDR         + VIDEO_M3_DATA_SIZE;
 DSS_M3_DATA_ADDR           = DSS_M3_CODE_ADDR           + DSS_M3_CODE_SIZE;
-DSS_M3_BSS_ADDR            = DSS_M3_DATA_ADDR           + DSS_M3_DATA_SIZE;
-DSS_M3_BSS_MAPPED_ADDR     = (DSS_M3_BSS_ADDR - DDR3_ADDR) + DUCATI_WB_WA_ADDR;
-DSP_CODE_ADDR              = DSS_M3_BSS_ADDR            + DSS_M3_BSS_SIZE;
+DSP_CODE_ADDR              = DSS_M3_DATA_ADDR           + DSS_M3_DATA_SIZE;
 DSP_DATA_ADDR              = DSP_CODE_ADDR              + DSP_CODE_SIZE;
 
-
 /* second 512MB */
-SR2_FRAME_BUFFER_ADDR      = DSP_DATA_ADDR              + DSP_DATA_SIZE;
-HDVPSS_DESC_ADDR           = SR2_FRAME_BUFFER_ADDR      + SR2_FRAME_BUFFER_SIZE;
+/*TILER_ADDR                 = DSP_DATA_ADDR              + DSP_DATA_SIZE;*/
+SR2_FRAME_BUFFER_ADDR      = DSP_DATA_ADDR                 + DSP_DATA_SIZE;
+SR0_ADDR                   = SR2_FRAME_BUFFER_ADDR      + SR2_FRAME_BUFFER_SIZE;
+HDVPSS_DESC_ADDR           = SR0_ADDR                   + SR0_SIZE;
 HDVPSS_SHARED_ADDR         = HDVPSS_DESC_ADDR           + HDVPSS_DESC_SIZE;
 NOTIFY_SHARED_ADDR         = HDVPSS_SHARED_ADDR         + HDVPSS_SHARED_SIZE;
 REMOTE_DEBUG_ADDR          = NOTIFY_SHARED_ADDR         + NOTIFY_SHARED_SIZE;
-
-
-/* third 512MB */
-
-SR0_ADDR                   = REMOTE_DEBUG_ADDR      	+ REMOTE_DEBUG_SIZE;
-SR1_ADDR                   = SR0_ADDR                 	+ SR0_SIZE;
-
-
-
-/* forth 512MB */
-TILER_ADDR                 = SR1_ADDR   + SR1_SIZE;
-
-
-
+/* third and fourth 512MB */
+TILER_ADDR                   = REMOTE_DEBUG_ADDR      + REMOTE_DEBUG_SIZE + LINUX_SIZE_SEGMENT2;
 
 Build.platformTable["ti.platforms.evmTI816X:core1"] =
 {
@@ -287,18 +271,6 @@ Build.platformTable["ti.platforms.evmTI816X:core1"] =
             name: "OCMC1_RAM",
             base: OCMC1_ADDR,
             len:  OCMC_SIZE
-        }],
-        ["VIDEO_M3_BSS_MAPPED_MEM", {
-            comment : "VIDEO_M3_BSS_MAPPED_MEM",
-            name    : "VIDEO_M3_BSS_MAPPED_MEM",
-            base    : VIDEO_M3_BSS_MAPPED_ADDR,
-            len     : VIDEO_M3_BSS_SIZE
-        }],
-        ["DSS_M3_BSS_MAPPED_MEM", {
-            comment : "DSS_M3_BSS_MAPPED_MEM",
-            name    : "DSS_M3_BSS_MAPPED_MEM",
-            base    : DSS_M3_BSS_MAPPED_ADDR,
-            len     : DSS_M3_BSS_SIZE
         }],
     ],
     customMemoryMap:
@@ -333,18 +305,6 @@ Build.platformTable["ti.platforms.evmTI816X:core1"] =
             base    : VIDEO_M3_DATA_ADDR,
             len     : VIDEO_M3_DATA_SIZE
         }],
-        ["VIDEO_M3_BSS_MEM", {
-            comment : "VIDEO_M3_BSS_MEM",
-            name    : "VIDEO_M3_BSS_MEM",
-            base    : VIDEO_M3_BSS_ADDR,
-            len     : VIDEO_M3_BSS_SIZE
-        }],
-        ["VIDEO_M3_BSS_MAPPED_MEM", {
-            comment : "VIDEO_M3_BSS_MAPPED_MEM",
-            name    : "VIDEO_M3_BSS_MAPPED_MEM",
-            base    : VIDEO_M3_BSS_MAPPED_ADDR,
-            len     : VIDEO_M3_BSS_SIZE
-        }],
         ["DSS_M3_CODE_MEM", {
             comment : "DSS_M3_CODE_MEM",
             name    : "DSS_M3_CODE_MEM",
@@ -356,18 +316,6 @@ Build.platformTable["ti.platforms.evmTI816X:core1"] =
             name    : "DDR3_M3",
             base    : DSS_M3_DATA_ADDR,
             len     : DSS_M3_DATA_SIZE
-        }],
-        ["DSS_M3_BSS_MEM", {
-            comment : "DSS_M3_BSS_MEM",
-            name    : "DSS_M3_BSS_MEM",
-            base    : DSS_M3_BSS_ADDR,
-            len     : DSS_M3_BSS_SIZE
-        }],
-        ["DSS_M3_BSS_MAPPED_MEM", {
-            comment : "DSS_M3_BSS_MAPPED_MEM",
-            name    : "DSS_M3_BSS_MAPPED_MEM",
-            base    : DSS_M3_BSS_MAPPED_ADDR,
-            len     : DSS_M3_BSS_SIZE
         }],
         ["DSP_CODE_MEM", {
             comment : "DSP_CODE_MEM",
@@ -460,18 +408,6 @@ Build.platformTable["ti.platforms.evmTI816X:core0"] =
             base: OCMC0_ADDR,
             len:  OCMC_SIZE
         }],
-        ["VIDEO_M3_BSS_MAPPED_MEM", {
-            comment : "VIDEO_M3_BSS_MAPPED_MEM",
-            name    : "VIDEO_M3_BSS_MAPPED_MEM",
-            base    : VIDEO_M3_BSS_MAPPED_ADDR,
-            len     : VIDEO_M3_BSS_SIZE
-        }],
-        ["DSS_M3_BSS_MAPPED_MEM", {
-            comment : "DSS_M3_BSS_MAPPED_MEM",
-            name    : "DSS_M3_BSS_MAPPED_MEM",
-            base    : DSS_M3_BSS_MAPPED_ADDR,
-            len     : DSS_M3_BSS_SIZE
-        }],
         ["L2_SRAM", {
             comment: "L2_SRAM",
             name: "L2_SRAM",
@@ -517,35 +453,11 @@ Build.platformTable["ti.platforms.evmTI816X:core0"] =
             base    : VIDEO_M3_DATA_ADDR,
             len     : VIDEO_M3_DATA_SIZE
         }],
-        ["VIDEO_M3_BSS_MEM", {
-            comment : "VIDEO_M3_BSS_MEM",
-            name    : "VIDEO_M3_BSS_MEM",
-            base    : VIDEO_M3_BSS_ADDR,
-            len     : VIDEO_M3_BSS_SIZE
-        }],
-        ["VIDEO_M3_BSS_MAPPED_MEM", {
-            comment : "VIDEO_M3_BSS_MAPPED_MEM",
-            name    : "VIDEO_M3_BSS_MAPPED_MEM",
-            base    : VIDEO_M3_BSS_MAPPED_ADDR,
-            len     : VIDEO_M3_BSS_SIZE
-        }],
         ["DSS_M3_CODE_MEM", {
             comment : "DSS_M3_CODE_MEM",
             name    : "DSS_M3_CODE_MEM",
             base    : DSS_M3_CODE_ADDR,
             len     : DSS_M3_CODE_SIZE
-        }],
-        ["DSS_M3_BSS_MEM", {
-            comment : "DSS_M3_BSS_MEM",
-            name    : "DSS_M3_BSS_MEM",
-            base    : DSS_M3_BSS_ADDR,
-            len     : DSS_M3_BSS_SIZE
-        }],
-        ["DSS_M3_BSS_MAPPED_MEM", {
-            comment : "DSS_M3_BSS_MAPPED_MEM",
-            name    : "DSS_M3_BSS_MAPPED_MEM",
-            base    : DSS_M3_BSS_MAPPED_ADDR,
-            len     : DSS_M3_BSS_SIZE
         }],
         ["DSS_M3_DATA_MEM", {
             comment : "DSS_M3_DATA_MEM",
@@ -695,12 +607,6 @@ Build.platformTable["ti.platforms.evmTI816X:plat"] =
             base    : VIDEO_M3_DATA_ADDR,
             len     : VIDEO_M3_DATA_SIZE
         }],
-        ["VIDEO_M3_BSS_MEM", {
-            comment : "VIDEO_M3_BSS_MEM",
-            name    : "VIDEO_M3_BSS_MEM",
-            base    : VIDEO_M3_BSS_ADDR,
-            len     : VIDEO_M3_BSS_SIZE
-        }],
         ["DSS_M3_CODE_MEM", {
             comment : "DSS_M3_CODE_MEM",
             name    : "DSS_M3_CODE_MEM",
@@ -712,12 +618,6 @@ Build.platformTable["ti.platforms.evmTI816X:plat"] =
             name    : "DSS_M3_DATA_MEM",
             base    : DSS_M3_DATA_ADDR,
             len     : DSS_M3_DATA_SIZE
-        }],
-        ["DSS_M3_BSS_MEM", {
-            comment : "DSS_M3_BSS_MEM",
-            name    : "DSS_M3_BSS_MEM",
-            base    : DSS_M3_BSS_ADDR,
-            len     : DSS_M3_BSS_SIZE
         }],
         ["DSP_CODE_MEM", {
             comment : "DSP_CODE_MEM",

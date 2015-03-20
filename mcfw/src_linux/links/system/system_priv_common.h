@@ -52,9 +52,9 @@ typedef struct
  */
 typedef struct
 {
+    OSA_MutexHndl          linkControlMutex;
     OSA_MbxHndl             mbx;
-    System_LinkObj          linkObj[SYSTEM_LINK_ID_MAX];
-
+    System_LinkObj          linkObj[SYSTEM_LINK_ID_MAX]; 
 } System_CommonObj;
 
 

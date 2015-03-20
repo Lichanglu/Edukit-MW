@@ -154,6 +154,14 @@ Void DeiLink_tskMain(struct Utils_TskHndl *pTsk, Utils_MsgHndl * pMsg)
                 done = TRUE;
                 ackMsg = TRUE;
                 break;
+		case DEI_LINK_CMD_SET_INCHAN_INFO:
+			{
+				DeiLink_InChInfo *params;
+				params = (DeiLink_InChInfo *) Utils_msgGetPrm(pMsg);
+				DeiLink_drvSetInChInfo(pObj, params);
+				Utils_tskAckOrFreeMsg(pMsg, status);
+			}          
+			break;
 
             default:
                 Utils_tskAckOrFreeMsg(pMsg, status);

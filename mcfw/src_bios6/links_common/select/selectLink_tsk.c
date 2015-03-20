@@ -21,6 +21,7 @@ Int32 SelectLink_drvCreate(SelectLink_Obj * pObj, SelectLink_CreateParams * pPrm
     System_LinkQueInfo *pOutQueInfo;
     SelectLink_ChInfo  *pInChInfo;
     SelectLink_OutQueChInfo *pOutQueChInfo;
+    Semaphore_Params semParams;
 
     /* copy create args */
     memcpy(&pObj->createArgs, pPrm, sizeof(pObj->createArgs));
@@ -30,6 +31,11 @@ Int32 SelectLink_drvCreate(SelectLink_Obj * pObj, SelectLink_CreateParams * pPrm
     status = System_linkGetInfo(pPrm->inQueParams.prevLinkId, &pObj->inTskInfo);
     UTILS_assert(status == FVID2_SOK);
     UTILS_assert(pPrm->inQueParams.prevLinkQueId < pObj->inTskInfo.numQue);
+
+    Semaphore_Params_init(&semParams);
+    semParams.mode = Semaphore_Mode_BINARY;
+
+    pObj->lock = Semaphore_create(1u, &semParams, NULL);
 
     /* point to correct previous link output que info */
     pInQueInfo = &pObj->inTskInfo.queInfo[pPrm->inQueParams.prevLinkQueId];
@@ -112,6 +118,8 @@ Int32 SelectLink_drvDelete(SelectLink_Obj * pObj)
         status = Utils_bufDelete(&pObj->outFrameQue[outQueId]);
         UTILS_assert(status == FVID2_SOK);
     }
+
+    Semaphore_delete(&pObj->lock);
 
 #ifdef SYSTEM_DEBUG_SELECT
     Vps_printf(" %d: SELECT   : Delete Done !!!\n", Utils_getCurTimeInMsec());
@@ -331,8 +339,11 @@ Int32 SelectLink_getLinkInfo(Utils_TskHndl * pTsk, System_LinkInfo * info)
 Int32 SelectLink_getFullFrames(Utils_TskHndl * pTsk, UInt16 queId,
                               FVID2_FrameList * pFrameList)
 {
+    Int32 status;
     SelectLink_Obj *pObj = (SelectLink_Obj *) pTsk->appData;
 
+    Semaphore_pend(pObj->lock, BIOS_WAIT_FOREVER);
+	
     if(queId >= pObj->createArgs.numOutQue)
     {
         Vps_printf(
@@ -344,7 +355,11 @@ Int32 SelectLink_getFullFrames(Utils_TskHndl * pTsk, UInt16 queId,
         return FVID2_SOK;
     }
 
-    return Utils_bufGetFull(&pObj->outFrameQue[queId], pFrameList, BIOS_NO_WAIT);
+    status = Utils_bufGetFull(&pObj->outFrameQue[queId], pFrameList, BIOS_NO_WAIT);
+
+    Semaphore_post(pObj->lock);
+
+    return status;
 }
 
 Int32 SelectLink_drvProcessFrames(SelectLink_Obj * pObj)
@@ -366,6 +381,8 @@ Int32 SelectLink_drvProcessFrames(SelectLink_Obj * pObj)
     pCreateArgs = &pObj->createArgs;
 	SelectID = SYSTEM_GET_LINK_ID(pObj->tskId)- SYSTEM_LINK_ID_SELECT_0;
 
+     frameList.numFrames = 0;
+	 
     System_getLinksFullFrames(pCreateArgs->inQueParams.prevLinkId,
                               pCreateArgs->inQueParams.prevLinkQueId,
                               &frameList);
@@ -376,16 +393,12 @@ Int32 SelectLink_drvProcessFrames(SelectLink_Obj * pObj)
             /* remap channel number */
             pFrame = frameList.frames[frameId];
 
+	     UTILS_assert(pFrame != NULL);
+
             UTILS_assert(pFrame->channelNum < SYSTEM_MAX_CH_PER_OUT_QUE);
 
             pChInfo = &pObj->inChInfo[pFrame->channelNum];
 
-			#if 0
-			if((SelectID == 2) && pFrame->channelNum)
-			{
-				Vps_printf("select in --->outchannelNum= %d pChInfo->queId = %u channelNum = %d\n",pFrame->channelNum,pChInfo->queId,pCreateArgs->numOutQue);
-			}
-			#endif
             if(pChInfo->queId >= pCreateArgs->numOutQue)
             {
                 /* input channel not mapped to any output que, release the frame */
@@ -422,12 +435,6 @@ Int32 SelectLink_drvProcessFrames(SelectLink_Obj * pObj)
                 /* channel channel number according to output que channel number */
                 pFrame->channelNum = pChInfo->outChNum;
 
-				#if 0
-				if(SelectID == 2)
-				{
-					Vps_printf("select in --->outchannelNum= %d pChInfo->queId = %d channelNum = %d\n",pFrame->channelNum,pChInfo->queId,pFrameInfo->selectOrgChannelNum[SelectID]);
-				}
-				#endif
                 /* put the frame in output que */
                 status = Utils_bufPutFullFrame(&pObj->outFrameQue[pChInfo->queId], pFrame);
                 UTILS_assert(status == FVID2_SOK);
@@ -469,7 +476,10 @@ Int32 SelectLink_putEmptyFrames(Utils_TskHndl * pTsk, UInt16 queId,
     UInt32 frameId;
     FVID2_Frame *pFrame;
     System_FrameInfo *pFrameInfo;
-	UInt32 SelectID = 0;
+    UInt32 SelectID = 0;
+
+    Semaphore_pend(pObj->lock, BIOS_WAIT_FOREVER);
+	
     for (frameId = 0; frameId < pFrameList->numFrames; frameId++)
     {
         pFrame = pFrameList->frames[frameId];
@@ -487,6 +497,8 @@ Int32 SelectLink_putEmptyFrames(Utils_TskHndl * pTsk, UInt16 queId,
     System_putLinksEmptyFrames(pObj->createArgs.inQueParams.prevLinkId,
                                pObj->createArgs.inQueParams.prevLinkQueId,
                                pFrameList);
+
+    Semaphore_post(pObj->lock);
 
     return FVID2_SOK;
 }
@@ -542,7 +554,7 @@ Void SelectLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
                 Utils_tskAckOrFreeMsg(pMsg, status);
                 break;
 
-			case SELECT_LINK_CMD_SET_OUT_QUE_CH_INFO2:
+		case SELECT_LINK_CMD_SET_OUT_QUE_CH_INFO2:
                 SelectLink_drvSetOutQueChInfo2(
                     pObj,
                     (SelectLink_OutQueChInfo*)Utils_msgGetPrm(pMsg)

@@ -373,6 +373,12 @@ typedef enum
 	/**< 3840x1200 60FPS VESA standard. */
 	SYSTEM_STD_3840x2400_60,
 	/**< 3840x2400 60FPS VESA standard. */
+	SYSTEM_STD_1920x2160_30,
+	/**< 1920x2160 30FPS VESA standard. */
+	SYSTEM_STD_1920x2400_30,
+	/**< 1920x2400 30FPS VESA standard. */
+	SYSTEM_STD_3840x1080_30,
+	/**< 3840x1080 30FPS VESA standard. */
 
 
     /* Multi channel standards from here Please add all VESA standards enums

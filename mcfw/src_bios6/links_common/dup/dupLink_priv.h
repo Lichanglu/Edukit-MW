@@ -21,6 +21,12 @@ typedef struct DupLink_statsObj {
     UInt32 releaseCount[DUP_LINK_MAX_OUT_QUE];
 } DupLink_statsObj;
 
+typedef struct
+{
+	Bool chRtOutInfoUpdate;
+	System_LinkChInfo chinfo;
+}System_dupChUpdateInfo;
+
 
 typedef struct {
     UInt32 tskId;
@@ -49,6 +55,10 @@ typedef struct {
     FVID2_FrameList outFrameList[DUP_LINK_MAX_OUT_QUE];
     DupLink_statsObj stats;
 
+    System_dupChUpdateInfo dupChUpdateInfo[SYSTEM_MAX_CH_PER_OUT_QUE];
+
 } DupLink_Obj;
+
+Int32 DupLink_SetInChInfo(DupLink_Obj * pObj, System_dupChInfo *pchinchfo);
 
 #endif

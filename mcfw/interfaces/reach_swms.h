@@ -37,6 +37,8 @@ Int32 getoutsize(UInt32 outRes, UInt32 * width, UInt32 * height);
 
 Int32 swMsSwitchLayout(UInt32 swMsLinkId, SwMsLink_CreateParams *swMsPrm, UInt32 curLayoutId);
 
+Int32 swMsSetInChInfo(UInt32 swMsLinkId, SwMsLink_InChInfo *Prm);
 
+Int32 swMsSetAutoGetInChInfo(UInt32 swMsLinkId, Int32 chId);
 #endif
 

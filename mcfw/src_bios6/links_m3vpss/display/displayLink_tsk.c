@@ -23,6 +23,8 @@ Int32 DisplayLink_tskRun(DisplayLink_Obj * pObj, Utils_TskHndl * pTsk,
     Utils_MsgHndl *pRunMsg;
     UInt32 cmd;
     DisplayLink_RtParams * params;
+    UInt32 startTime =0;
+    UInt32 currTime =0;
 
 
     *done = FALSE;
@@ -33,6 +35,7 @@ Int32 DisplayLink_tskRun(DisplayLink_Obj * pObj, Utils_TskHndl * pTsk,
 
     *pMsg = NULL;
 
+    startTime = Utils_getCurTimeInMsec();
     while (!runDone)
     {
         status = Utils_tskRecvMsg(pTsk, &pRunMsg, BIOS_WAIT_FOREVER);
@@ -52,6 +55,13 @@ Int32 DisplayLink_tskRun(DisplayLink_Obj * pObj, Utils_TskHndl * pTsk,
                     runDone = TRUE;
                     runAckMsg = TRUE;
                 }
+
+		  currTime = Utils_getCurTimeInMsec();
+		  if((pObj->tskId == SYSTEM_LINK_ID_DISPLAY_0 ) && ((currTime - startTime) >= 10*1000))
+	  	  {
+	  	  	startTime = currTime;
+	  	  	Vps_printf("=======display running!\n");
+	  	  }
                 break;
 
             case SYSTEM_CMD_STOP:
@@ -102,17 +112,20 @@ Int32 DisplayLink_tskRun(DisplayLink_Obj * pObj, Utils_TskHndl * pTsk,
                 System_getOutSize(params->resolution,
                                   &pObj->displayFormat.width,
                                   &pObj->displayFormat.height);
-
+				Vps_printf("display change ,width=%d,height=%d\n",pObj->displayFormat.width,pObj->displayFormat.height);
                 DisplayLink_drvSetFmt(pObj, &pObj->displayFormat);
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
                 break;
 
             case DISPLAY_LINK_CMD_STOP_DRV:
                 DisplayLink_drvStop(pObj);
+                /*«Âø’ ‰»Îbuff£¨∑¿÷πø®À¿*/
+                DisplayLink_freeFrame(pObj);
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
                 break;
 
             case DISPLAY_LINK_CMD_START_DRV:
+                DisplayLink_drvDisplayAllocAndQueBlankFrame(pObj);
                 status = DisplayLink_drvStart(pObj);
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
                 break;

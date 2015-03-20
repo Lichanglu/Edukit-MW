@@ -138,6 +138,24 @@ Int32 dei_print_buffer_statics(Uint32 deiId)
 	return status;
 }
 
+Int32 dei_set_inchinfo(Uint32 deiId, DeiLink_InChInfo *params)
+{
+	Int32 status = -1;
+
+	if(deiId != SYSTEM_LINK_ID_INVALID) {
+		status = System_linkControl(deiId,
+								DEI_LINK_CMD_SET_INCHAN_INFO,
+								params,
+								sizeof(*params),
+								TRUE
+								);
+
+	}
+
+	return status;
+}
+
+
 
 
 

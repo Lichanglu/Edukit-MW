@@ -16,12 +16,15 @@ System_CommonObj gSystem_objCommon;
 Int32 System_init()
 {
     Int32         status;
-
+	
     #ifdef SYSTEM_DEBUG
 //    printf ( " %u: SYSTEM: System Common Init in progress !!!\n", OSA_getCurTimeInMsec());
     #endif
 
     memset(&gSystem_objCommon, 0, sizeof(gSystem_objCommon));
+
+    status = OSA_mutexCreate(&gSystem_objCommon.linkControlMutex);
+    UTILS_assert(status==OSA_SOK);
     
     System_ipcInit();
 
@@ -33,7 +36,7 @@ Int32 System_init()
     AvsyncLink_init();
     status = OSA_mbxCreate(&gSystem_objCommon.mbx);
     UTILS_assert(  status==OSA_SOK);
-
+	
     SystemLink_init();
 
     #ifdef SYSTEM_DEBUG
@@ -46,6 +49,8 @@ Int32 System_init()
 
 Int32 System_deInit()
 {
+    Int32         status;
+	
     #ifdef SYSTEM_DEBUG
 //    printf ( " %u: SYSTEM: System Common De-Init in progress !!!\n", OSA_getCurTimeInMsec());
     #endif
@@ -61,6 +66,9 @@ Int32 System_deInit()
     System_ipcDeInit();
 
     OSA_mbxDelete(&gSystem_objCommon.mbx);
+
+    status = OSA_mutexDelete(&gSystem_objCommon.linkControlMutex);
+    UTILS_assert(status==OSA_SOK);
 
     #ifdef SYSTEM_DEBUG
 //    printf ( " %u: SYSTEM: System Common De-Init Done !!!\n", OSA_getCurTimeInMsec());

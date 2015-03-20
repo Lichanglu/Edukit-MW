@@ -21,7 +21,7 @@
 
 #define ALG_LINK_SCD_MAX_OUT_FRAMES                 (ALG_LINK_SCD_MAX_CH*ALG_LINK_SCD_MAX_OUT_FRAMES_PER_CH)
 
-#define MOTION_DETECTION_SENSITIVITY(x,y)           ((x * y)/5) // 20%
+#define MOTION_DETECTION_SENSITIVITY(x,y)           ((x * y)/20) // 5%
 #define MOTION_DETECTION_SENSITIVITY_STEP           (10)        // 10%
 #define NUM_BLOCK_MOTION_DETECTION_THRESOLD(x)      (x >> 1)    // 50%
 

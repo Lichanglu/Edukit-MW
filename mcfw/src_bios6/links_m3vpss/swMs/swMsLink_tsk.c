@@ -44,7 +44,7 @@ Int32 SwMsLink_tskRun(SwMsLink_Obj * pObj, Utils_TskHndl * pTsk,
             case SYSTEM_CMD_NEW_DATA:
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
 
-				flushCmds[0] = SYSTEM_CMD_NEW_DATA;
+		flushCmds[0] = SYSTEM_CMD_NEW_DATA;
                 Utils_tskFlushMsg(pTsk, flushCmds, 1);
 
                 SwMsLink_drvProcessData(pObj);
@@ -116,6 +116,22 @@ Int32 SwMsLink_tskRun(SwMsLink_Obj * pObj, Utils_TskHndl * pTsk,
                 status = SwMsLink_flushBuffers(pObj,pPrm);
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
                 break;
+	     case SYSTEM_SW_MS_LINK_CMD_SET_INCHAN_INFO:
+		{
+			SwMsLink_InChInfo *params;
+			params = (SwMsLink_InChInfo *) Utils_msgGetPrm(pRunMsg);
+			SwMsLink_drvSetInChInfo(pObj, params);
+			Utils_tskAckOrFreeMsg(pRunMsg, status);
+			break;
+		} 
+	     case SYSTEM_SW_MS_LINK_CMD_AUTO_GET_INCHAN_INFO:
+		{
+			Int32 chId;
+			chId = *(Int32 *) Utils_msgGetPrm(pRunMsg);
+			SwMsLink_drvSetAutoGetInChInfo(pObj, chId);
+			Utils_tskAckOrFreeMsg(pRunMsg, status);
+			break;
+		} 
             default:
                 Utils_tskAckOrFreeMsg(pRunMsg, status);
                 break;
@@ -191,13 +207,13 @@ Void SwMsLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
                 Utils_tskAckOrFreeMsg(pMsg, status);
                 break;
 
-			case SYSTEM_SW_MS_LINK_CMD_GET_LAYOUT_PARAMS:
-				 pPrm = Utils_msgGetPrm(pMsg);
+	case SYSTEM_SW_MS_LINK_CMD_GET_LAYOUT_PARAMS:
+		 pPrm = Utils_msgGetPrm(pMsg);
 
-				 status = SwMsLink_drvGetLayoutParams(pObj, pPrm);
+		 status = SwMsLink_drvGetLayoutParams(pObj, pPrm);
 
-				 Utils_tskAckOrFreeMsg(pMsg, status);
-				 break;
+		 Utils_tskAckOrFreeMsg(pMsg, status);
+		 break;
 
             default:
                 Utils_tskAckOrFreeMsg(pMsg, status);

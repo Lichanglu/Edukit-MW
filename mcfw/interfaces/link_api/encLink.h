@@ -29,7 +29,7 @@
 #define ENC_LINK_MAX_OUT_QUE    (1)
 
 /** \brief Max ENC channels per link */
-#define ENC_LINK_MAX_CH         (48)
+#define ENC_LINK_MAX_CH         (16)//(48)
 
 /** \brief Max number of buffer polls in ENC link */
 #define ENC_LINK_MAX_BUF_ALLOC_POOLS        (4)
@@ -309,7 +309,7 @@ typedef struct EncLink_ChCreateParams
     Int32 numTemporalLayer;
     /**< Denotes the number of temporal layers that the encoder output bitstream will have.
      *   Default is the 1 for H.264 encoder link channels and is DONT CARE for both encoders */
-     Int32 encLevel;
+     //Int32 encLevel;
     //H264 encode level   ***add by lichl **  
     EncLink_ChDynamicParams defaultDynamicParams;
 } EncLink_ChCreateParams;

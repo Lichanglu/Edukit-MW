@@ -61,6 +61,8 @@ typedef struct {
     Bool chRtOutInfoUpdateForced[DEI_LINK_MAX_OUT_QUE];
     Bool chRtOutInfoUpdate[DEI_LINK_MAX_OUT_QUE];
     UInt32 chRtOutInfoUpdateDropCnt;
+    Bool chRtInInfoUpdate[DEI_LINK_MAX_OUT_QUE];
+    System_LinkChInfo rtChannelInfo;
 
     Uint32 curFrameNum;
     UInt32 frameSkipCount[DEI_LINK_MAX_OUT_QUE];
@@ -204,5 +206,7 @@ Int32 DeiLink_drvGetChDynamicOutputRes(DeiLink_Obj * pObj,
                                        DeiLink_chDynamicSetOutRes * params);
 
 Int32 DeiLink_drvFlushChannel(DeiLink_Obj * pObj, UInt32 chId);
+
+Int32 DeiLink_drvSetInChInfo(DeiLink_Obj * pObj, DeiLink_InChInfo *pchinfo);
 
 #endif

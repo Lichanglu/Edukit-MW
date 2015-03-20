@@ -252,7 +252,8 @@ Int32 System_getClk(UInt32 displayRes)
             clkValue = 74250u;
         break;
         case VSYS_STD_720P_60:
-            clkValue = 74250;
+	 case VSYS_STD_720P_50:
+            clkValue = 74250u;
         break;
         case VSYS_STD_1080P_60:
         case VSYS_STD_1080P_50:
@@ -309,6 +310,9 @@ Int32 System_getVencMode(Int32 resolution)
         break;
         case VSYS_STD_720P_60:
             vencMode = FVID2_STD_720P_60;
+        break;
+        case VSYS_STD_720P_50:
+            vencMode = FVID2_STD_720P_50;
         break;
         case VSYS_STD_XGA_60:
             vencMode = FVID2_STD_XGA_60;

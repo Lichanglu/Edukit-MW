@@ -80,19 +80,21 @@ Void *Audio_allocateSharedRegionBuf (Int32 bufSize)
 {
     IHeap_Handle    heap = NULL;
 
-	int cache0 = 0;
-	int cache1 = 0;	
+    int cache0 = 0;
+    int cache1 = 0;	
+    UInt32 cacheLineSize;
     heap = SharedRegion_getHeap(SR_FRAME_BUFFERS_ID);
-	cache0 = SharedRegion_isCacheEnabled(SR_FRAME_BUFFERS_ID);
-	cache1 = SharedRegion_isCacheEnabled(0);
-//	printf("-------------------------------------------------------\n");
-//	printf("-------------------------------------------------------\n");
-	printf("===cach0=%d,cach1=%d\n",cache0,cache1);
-//	printf("-------------------------------------------------------\n");
-//	printf("-------------------------------------------------------\n");
-	
-	
-    return Memory_alloc (heap, bufSize, 128, NULL);
+    cache0 = SharedRegion_isCacheEnabled(SR_FRAME_BUFFERS_ID);
+    cache1 = SharedRegion_isCacheEnabled(0);
+    cacheLineSize = SharedRegion_getCacheLineSize(SR_FRAME_BUFFERS_ID);
+    //	printf("-------------------------------------------------------\n");
+    //	printf("-------------------------------------------------------\n");
+    printf("===cach0=%d,cach1=%d,cacheLineSize:%d\n",cache0,cache1,cacheLineSize);
+    //	printf("-------------------------------------------------------\n");
+    //	printf("-------------------------------------------------------\n");
+
+
+    return Memory_alloc (heap, bufSize, cacheLineSize, NULL);
 }
 
 Void Audio_freeSharedRegionBuf (Void *buf, Int32 bufSize)

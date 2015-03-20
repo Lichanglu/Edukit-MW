@@ -6,8 +6,7 @@
 extern "C" {
 #endif
 
-#include "reach_system.h"
-#include "common_def/ti_vcap_common_def.h"
+#include "mcfw/src_linux/mcfw_api/reach_system_priv.h"
 
 typedef struct _enc_struct_ {
 	Uint32					link_id;

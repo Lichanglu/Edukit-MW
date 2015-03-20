@@ -99,6 +99,40 @@ Int32 sclr_set_SclrMode(Uint32 sclrId, SclrLink_SclrMode *params)
 	return status;
 }
 
+Int32 sclr_set_inchinfo(Uint32 sclrId, System_LinkChInfo2 *params)
+{
+	Int32 status = -1;
+
+	if(sclrId != SYSTEM_LINK_ID_INVALID) {
+		status = System_linkControl(sclrId,
+								SCLR_LINK_CMD_SET_INCHAN_INFO,
+								params,
+								sizeof(*params),
+								TRUE
+								);
+
+	}
+
+	return status;
+}
+
+Int32 sclr_set_auto_get_inchinfo(Uint32 sclrId, Int32 chId)
+{
+	Int32 status = -1;
+
+	if(sclrId != SYSTEM_LINK_ID_INVALID) {
+		status = System_linkControl(sclrId,
+								SCLR_LINK_CMD_SET_AUTO_GET_INCHAN_INFO,
+								&chId,
+								sizeof(chId),
+								TRUE
+								);
+
+	}
+
+	return status;
+}
+
 
 Int32 sclr_skip_fidtype(Uint32 sclrId, UInt32 vcChnId, Int32 fidType)
 {

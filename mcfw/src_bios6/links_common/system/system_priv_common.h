@@ -16,6 +16,7 @@
 #include <mcfw/src_bios6/utils/utils_tiler.h>
 #include <mcfw/src_bios6/utils/utils_bit_buf.h>
 #include <mcfw/src_bios6/utils/utils_buf_ext.h>
+#include <mcfw/src_bios6/utils/utils_getpll_info.h>
 
 #include <mcfw/interfaces/link_api/system.h>
 #include <mcfw/interfaces/link_api/system_common.h>
@@ -144,7 +145,7 @@ typedef struct {
                              * this is a live channel
                              */
 
-    UInt32 selectOrgChannelNum[4]; /* original channeNum at input of select Link */
+    UInt32 selectOrgChannelNum[7]; /* original channeNum at input of select Link */
     UInt32 seqId;            /* Display sequence id 
                               * associated with the frame.
                               * Video backend will display

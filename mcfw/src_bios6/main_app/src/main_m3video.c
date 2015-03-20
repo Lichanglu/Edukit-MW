@@ -27,7 +27,12 @@ Void M3VIDEO_main(UArg arg0, UArg arg1)
 }
 Int32 main(void)
 {
-    Utils_setCpuFrequency(SYSTEM_M3VIDEO_FREQ);
+    float m3Freq = Utils_getFrequency(PLL_MODULE_DUCATI_M3);
+	
+    if (m3Freq <= 0)
+        m3Freq = SYSTEM_M3VIDEO_FREQ;
+    Utils_setCpuFrequency(m3Freq*1000*1000);
+	
     HDVICP2_ClearIVAInterrupts();
     System_start(M3VIDEO_main);
     BIOS_start();

@@ -8,7 +8,7 @@
 
 #include "ti_media_std.h"
 #include <device.h>
-
+#include "osa_i2c.h"
 UInt32 Device_getVidDecI2cAddr(UInt32 vidDecId, UInt32 vipInstId)
 {
 

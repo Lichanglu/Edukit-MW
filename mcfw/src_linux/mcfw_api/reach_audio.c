@@ -4,6 +4,7 @@
 #include "reach_audio.h"
 #include <osa_thr.h>
 #include <sys/time.h>
+#include <ti/syslink/utils/Cache.h>
 
 static UInt32 getostime()
 {
@@ -183,25 +184,25 @@ Int32 checkAudioCapParam(audio_struct *pahandle)
 {
 	UInt32 ret = 0;	
 	Int8 device_name[64] = {0};
-	int i;
-	Int32 num_inst = 2;
-	
-	for(i=0;i<num_inst;i++){
-		if(pahandle[i].pacaphandle->updateparam==1){	
-			strcpy(device_name, pahandle[i].pacaphandle->create_params.device_name);
-			snd_pcm_close(pahandle[i].pacaphandle->phandle_in);
-			pahandle[i].pacaphandle->phandle_in = NULL;
-			usleep(100000);
-			ret = snd_pcm_open(&(pahandle[i].pacaphandle->phandle_in), device_name, SND_PCM_STREAM_CAPTURE, 0);
-			if(ret < 0){
-				OSA_printf("audio_capture_init: snd_pcm_open error: %s\n", snd_strerror(ret));			
-			}
-			OSA_printf("pahandle[i].pacaphandle->phandle_i =%p=%d==%s\n",pahandle[i].pacaphandle->phandle_in,i,device_name);
-			ret = hwparam_init(&(pahandle[i].pacaphandle->create_params), &(pahandle[i].pacaphandle->phandle_in), &(pahandle[i].pacaphandle->params_in));
-			pahandle[i].pacaphandle->updateparam=0;
-		}
+	//int i;
+	if(NULL == pahandle)
+	{
+		return -1;
 	}
-	return -1;
+	if(pahandle->pacaphandle->updateparam==1){	
+		strcpy(device_name, pahandle->pacaphandle->create_params.device_name);
+		snd_pcm_close(pahandle->pacaphandle->phandle_in);
+		pahandle->pacaphandle->phandle_in = NULL;
+		usleep(100000);
+		ret = snd_pcm_open(&(pahandle->pacaphandle->phandle_in), device_name, SND_PCM_STREAM_CAPTURE, 0);
+		if(ret < 0){
+			OSA_printf("audio_capture_init: snd_pcm_open error: %s\n", snd_strerror(ret));			
+		}
+		OSA_printf("pahandle->pacaphandle->phandle_i =%p==%s\n",pahandle->pacaphandle->phandle_in,device_name);
+		ret = hwparam_init(&(pahandle->pacaphandle->create_params), &(pahandle->pacaphandle->phandle_in), &(pahandle->pacaphandle->params_in));
+		pahandle->pacaphandle->updateparam=0;
+	}
+	return 0;
 }
 
 Int32 audio_device_create_inst(Void **pahandle, audio_capture_params *paparam)
@@ -238,7 +239,7 @@ Int32 audio_device_create_inst(Void **pahandle, audio_capture_params *paparam)
 	if(paparam->mode == AUDIO_INPUT_MODE || paparam->mode == AUDIO_FULLDUPLEX_MODE){
 		printf("pahandle[i].pacaphandle->phandle_i =%p\n",ppahandle->phandle_in);
 
-		ret = snd_pcm_open(&(ppahandle->phandle_in), device_name, SND_PCM_STREAM_CAPTURE, 0);
+		ret = snd_pcm_open(&(ppahandle->phandle_in), device_name, SND_PCM_STREAM_CAPTURE, /*0*/SND_PCM_NO_AUTO_CHANNELS);
 		if(ret < 0){
 			OSA_printf("audio_capture_init: snd_pcm_open error: %s\n", snd_strerror(ret));
 			goto cleanup;
@@ -347,13 +348,15 @@ Int32 audio_read_frame(Void *pahandle, Int8 *abuf)
 	
 	read_samples = paparam->bufsize / (2 * paparam->channel);
 	bufptr = abuf;
-	
+
 	while(read_samples > 0)
 	{
-		num_samples = snd_pcm_readi(phandle, bufptr, read_samples);		
+		num_samples = snd_pcm_readi(phandle, bufptr, read_samples);	
 		if(num_samples == -EAGAIN)
+		{
 			continue;
-			
+		}
+
 		if(num_samples < 0)
 		{
 			if(arecovery(phandle, num_samples) < 0)
@@ -511,7 +514,7 @@ static Int32 audio_aacenc_delete(Void *handle)
 	return status;
 }
 
-
+#if 0
 static Int32 audio_aacdec_create(Void **handle, ADEC_CREATE_PARAMS_S *pPrm)
 {
 	*handle = Audio_allocMem(Audio_getDecoderContextSize(AUDIO_CODEC_TYPE_AAC_LC));
@@ -521,6 +524,7 @@ static Int32 audio_aacdec_create(Void **handle, ADEC_CREATE_PARAMS_S *pPrm)
 		
 	return -1;
 }
+#endif
 
 static Int32 audio_aacdec_process(Void *handle, ADEC_PROCESS_PARAMS_S *pPrm)
 {
@@ -573,19 +577,15 @@ int audio_setCapParamSampleRate(Void *pahandle,int samprate)
 
 static Void *audio_encThread(audio_struct *paudosinst)
 {
-	audio_encdec_handle *phandle = paudosinst[0].paenchandle;
-	audio_encdec_handle *phandle2 = paudosinst[1].paenchandle;
+	audio_encdec_handle *phandle = paudosinst->paenchandle;
 	Int32 status = -1;
 	audio_buf	*painbuf;
 	audio_buf	*paoutbuf;
-	audio_buf	*painbuf2;
-	audio_buf	*paoutbuf2;
 	AENC_PROCESS_PARAMS_S	enc_param;
 	ADEC_PROCESS_PARAMS_S	dec_param;
 	AENC_CREATE_PARAMS_S *paacenc_params = &(phandle->aenc_create_param);
-	//FILE *fp = fopen("audio.pcm", "w+");
 
-	printf("phandle= %p,phandle2 =%p\n",phandle,phandle2);
+	printf("phandle= %p\n",phandle);
  	while(TRUE == phandle->run_status)
 	{
 		if(phandle->updateparm)
@@ -600,34 +600,26 @@ static Void *audio_encThread(audio_struct *paudosinst)
 		}
 		status = OSA_queGet(&(phandle->indata_user_handle.full_que), (Int32 *)(&painbuf), OSA_TIMEOUT_FOREVER);
 		status = OSA_queGet(&(phandle->outdata_user_handle.empty_que), (Int32 *)(&paoutbuf), OSA_TIMEOUT_FOREVER);
-
-		#if 0
-		struct timeval tv1;
-		struct timeval tv2;
-		gettimeofday(&tv1, NULL);
-		#endif
-		//fwrite(painbuf->addr, painbuf->buf_size, 1, fp);		
+	
 		if(phandle->inst_type == AAC_ENC)
 		{
-	#if 1	
 			enc_param.inBuf.dataBufSize		= phandle->inbuf_size;
 			enc_param.inBuf.dataBuf			= painbuf->addr;
 			enc_param.outBuf.dataBufSize	= phandle->outbuf_size;
 			enc_param.outBuf.dataBuf		= paoutbuf->addr;
-			
 			status = audio_aacenc_process(phandle->aenchandle, &enc_param);
 			if(enc_param.inBuf.dataBufSize <= 0)
 			{
 				OSA_printf("audio enc frame error!\n");
 				break;
 			}
-			
+
 			paoutbuf->buf_size = enc_param.outBuf.dataBufSize;
 			paoutbuf->fill_length = enc_param.outBuf.dataBufSize;
 			paoutbuf->time_stamp  = getostime();
 			paoutbuf->LVolume = painbuf->LVolume;
 			paoutbuf->RVolume = painbuf->RVolume;
-		#endif
+			//fwrite(paoutbuf->addr, paoutbuf->fill_length, 1, fp);	
 		}
 		else if(phandle->inst_type == AAC_DEC)
 		{
@@ -645,57 +637,9 @@ static Void *audio_encThread(audio_struct *paudosinst)
 			}
 			
 		}
-
-		#if 0
-		gettimeofday(&tv2, NULL);
-	    if(tv2.tv_usec < tv1.tv_usec)
-	    {
-	        printf("time  %u %u\n", tv2.tv_sec - 1 - tv1.tv_sec, tv2.tv_usec + 1000000 - tv1.tv_usec);
-	    }
-	    else
-	    {
-	        printf("time  %u %u\n",tv2.tv_sec - tv1.tv_sec, tv2.tv_usec - tv1.tv_usec);
-	    }
-		#endif
 		
 		status = OSA_quePut(&(phandle->outdata_user_handle.full_que), (Int32)paoutbuf,OSA_TIMEOUT_NONE);
 		status = OSA_quePut(&(phandle->indata_user_handle.empty_que), (Int32)painbuf,OSA_TIMEOUT_NONE);
-
-#if 1		
-		if(phandle2->updateparm)
-		{
-			Audio_setAacEncParam(phandle2->aenchandle, paacenc_params,phandle2->aenc_create_param.sampleRate);			
-			printf("phandle->aenc_create_param.sampleRate=%d\n",phandle->aenc_create_param.sampleRate);
-			phandle2->updateparm=0;
-		}
-
-		status = OSA_queGet(&(phandle2->indata_user_handle.full_que), (Int32 *)(&painbuf2), OSA_TIMEOUT_FOREVER);
-		status = OSA_queGet(&(phandle2->outdata_user_handle.empty_que), (Int32 *)(&paoutbuf2), OSA_TIMEOUT_FOREVER);
-//此处编码第二路
-
-#if 1
-			enc_param.inBuf.dataBufSize		= phandle2->inbuf_size;
-			enc_param.inBuf.dataBuf			= painbuf2->addr;
-			enc_param.outBuf.dataBufSize	= phandle2->outbuf_size;
-			enc_param.outBuf.dataBuf		= paoutbuf2->addr;
-			
-			status = audio_aacenc_process(phandle2->aenchandle, &enc_param);
-			if(enc_param.inBuf.dataBufSize <= 0)
-			{
-				OSA_printf("audio enc frame error!\n");
-				break;
-			}
-		
-			paoutbuf2->buf_size = enc_param.outBuf.dataBufSize;
-			paoutbuf2->fill_length = enc_param.outBuf.dataBufSize;
-			paoutbuf2->time_stamp  = getostime();
-			paoutbuf2->LVolume = painbuf2->LVolume;
-			paoutbuf2->RVolume = painbuf2->RVolume;
-#endif	
-		status = OSA_quePut(&(phandle2->outdata_user_handle.full_que), (Int32)paoutbuf2,OSA_TIMEOUT_NONE);
-		status = OSA_quePut(&(phandle2->indata_user_handle.empty_que), (Int32)painbuf2,OSA_TIMEOUT_NONE);
-
-#endif
 
 	}
 	
@@ -750,7 +694,7 @@ printf("==temp==%dh^&*\n",temp);
 	if(temp != 1 && temp != 2 && temp != 3) {
 		//return -1;
 	}
-printf("==========%^&*\n");
+	printf("==========\n");
 	temp = paudosinst[ch].pacaphandle->create_params.samplerate; //采样率
 	printf("old=%d,new=%d\n",temp,af.samplerate);
 	printf("=%d=phandle= %p,phandle2 =%p\n",ch,paudosinst[0].paenchandle,paudosinst[1].paenchandle);
@@ -828,179 +772,83 @@ Int32 audio_encdec_create_inst(audio_struct *pahandle,
 {
 	Int32 status = -1;
 	Int32 index = 0;
-	int i;
+	int i = 0;
 	audio_struct tmp;
 	tmp.pacaphandle=0;
-
-	Int32 num_inst = 2;
 
 	if((pahandle == NULL)|| (user_indata_get_fxn == NULL) || (user_outdata_put_fxn == NULL))
 	{
 		OSA_printf("audio_capture_init error, handle or params is NULL!\n");
 		return -1;
 	}
-	for(i=0;i<num_inst;i++)
-	{
-		if(pahandle[i].paparam.inst_type != AAC_ENC && pahandle[i].paparam.inst_type != AAC_DEC){
-			OSA_printf("audio_encdec_create_inst: audio inst type error!\n");
-			return -1;
-		}
+	if(pahandle->paparam.inst_type != AAC_ENC && pahandle->paparam.inst_type != AAC_DEC){
+		OSA_printf("audio_encdec_create_inst: audio inst type error!\n");
+		return -1;
 	}
-	for(i=0;i<num_inst;i++)
-	{
-		pahandle[i].paenchandle=(audio_encdec_handle *)malloc(sizeof(audio_encdec_handle));
-		if(pahandle[i].paenchandle == NULL){
-			OSA_printf("audio_capture_init: malloc handle faile!\n");
-			return -1;//存在泄漏的可能
-		}
+	pahandle->paenchandle=(audio_encdec_handle *)malloc(sizeof(audio_encdec_handle));
+	if(pahandle->paenchandle == NULL){
+		OSA_printf("audio_capture_init: malloc handle faile!\n");
+		return -1;//存在泄漏的可能
 	}
 
-	for(i=0;i<num_inst;i++)
-	{
-		pahandle[i].paenchandle->inst_type = pahandle[i].paparam.inst_type;
-		pahandle[i].paenchandle->user_indata_get_fxn = user_indata_get_fxn;
-		pahandle[i].paenchandle->user_outdata_put_fxn = user_outdata_put_fxn;
-	}
+	pahandle->paenchandle->inst_type = pahandle[i].paparam.inst_type;
+	pahandle->paenchandle->user_indata_get_fxn = user_indata_get_fxn;
+	pahandle->paenchandle->user_outdata_put_fxn = user_outdata_put_fxn;
 
-	for(i=0;i<num_inst;i++)
-	{
-		/* 创建第二路编码库实例 */
-		if(pahandle[i].paenchandle->inst_type == AAC_ENC){				
-			memcpy(&(pahandle[i].paenchandle->aenc_create_param), &(encparam[i].aenc_create_param), sizeof(AENC_CREATE_PARAMS_S));			
-			status = audio_aacenc_create(&(pahandle[i].paenchandle->aenchandle), &(pahandle[i].paenchandle->aenc_create_param));
-			OSA_assert(status == OSA_SOK);			
-			pahandle[i].paenchandle->inbuf_size = (MAX_IN_SAMPLES * SAMPLE_LEN * pahandle[i].paenchandle->aenc_create_param.numberOfChannels);
-			printf("pahandle[i].paenchandle->inbuf_node[index].addr=%d,%d,%d\n",pahandle[i].paenchandle->inbuf_size,pahandle[i].paenchandle->aenc_create_param.minInBufSize,pahandle[i].paenchandle->aenc_create_param.minOutBufSize);
-			if(pahandle[i].paenchandle->inbuf_size < pahandle[i].paenchandle->aenc_create_param.minInBufSize){
-				pahandle[i].paenchandle->inbuf_size = pahandle[i].paenchandle->aenc_create_param.minInBufSize;
-			}
-			
-			pahandle[i].paenchandle->outbuf_size = MAX_OUTPUT_BUFFER;
-			if(pahandle[i].paenchandle->outbuf_size < pahandle[i].paenchandle->aenc_create_param.minOutBufSize){
-				pahandle[i].paenchandle->outbuf_size = pahandle[i].paenchandle->aenc_create_param.minOutBufSize;
-			}
-		}
-		else{
-			OSA_printf("ppahandle2 not enc and not dec, what you want to do?\n");
-			goto cleanup;
-		}
-	}
-	/*
-
-	if(ppahandle->inst_type == AAC_ENC){
-		memcpy(&(ppahandle->aenc_create_param), &(param->aenc_create_param), sizeof(AENC_CREATE_PARAMS_S));
-		AENC_CREATE_PARAMS_S *paacenc_params = &(ppahandle->aenc_create_param);
-		
-		status = audio_aacenc_create(&ppahandle->aenchandle, paacenc_params);
-		OSA_assert(status == OSA_SOK);
-		
-		ppahandle->inbuf_size = (MAX_IN_SAMPLES * SAMPLE_LEN * paacenc_params->numberOfChannels);
-		if(ppahandle->inbuf_size < paacenc_params->minInBufSize){
-			ppahandle->inbuf_size = paacenc_params->minInBufSize;
+	/* 创建第二路编码库实例 */
+	if(pahandle->paenchandle->inst_type == AAC_ENC){				
+		memcpy(&(pahandle->paenchandle->aenc_create_param), &(encparam->aenc_create_param), sizeof(AENC_CREATE_PARAMS_S));			
+		status = audio_aacenc_create(&(pahandle->paenchandle->aenchandle), &(pahandle->paenchandle->aenc_create_param));
+		OSA_assert(status == OSA_SOK);			
+		pahandle->paenchandle->inbuf_size = (MAX_IN_SAMPLES * SAMPLE_LEN * pahandle->paenchandle->aenc_create_param.numberOfChannels);
+		printf("pahandle->paenchandle->inbuf_node[index].addr=%d,%d,%d\n",pahandle->paenchandle->inbuf_size,pahandle->paenchandle->aenc_create_param.minInBufSize,pahandle->paenchandle->aenc_create_param.minOutBufSize);
+		if(pahandle->paenchandle->inbuf_size < pahandle->paenchandle->aenc_create_param.minInBufSize){
+			pahandle->paenchandle->inbuf_size = pahandle->paenchandle->aenc_create_param.minInBufSize;
 		}
 		
-		ppahandle->outbuf_size = MAX_OUTPUT_BUFFER;
-		if(ppahandle->outbuf_size < paacenc_params->minOutBufSize){
-			ppahandle->outbuf_size = paacenc_params->minOutBufSize;
-		}
-	}
-	else if(ppahandle->inst_type == AAC_DEC){	
-		memcpy(&(ppahandle->adec_create_param), &(param->adec_create_param), sizeof(ADEC_CREATE_PARAMS_S));
-		ADEC_CREATE_PARAMS_S *paacdec_params = &(ppahandle->adec_create_param);
-		
-		status = audio_aacdec_create(&ppahandle->adechandle, paacdec_params);
-		OSA_assert(status == OSA_SOK);
-		
-		ppahandle->inbuf_size = MAX_INPUT_BUFFER;
-		if(ppahandle->inbuf_size < paacdec_params->minInBufSize){
-			ppahandle->inbuf_size = paacdec_params->minInBufSize;
-		}
-		
-		ppahandle->outbuf_size = MAX_OUTPUT_BUFFER;
-		if(ppahandle->outbuf_size < paacdec_params->minOutBufSize){
-			ppahandle->outbuf_size = paacdec_params->minOutBufSize;
+		pahandle->paenchandle->outbuf_size = MAX_OUTPUT_BUFFER;
+		if(pahandle->paenchandle->outbuf_size < pahandle->paenchandle->aenc_create_param.minOutBufSize){
+			pahandle->paenchandle->outbuf_size = pahandle->paenchandle->aenc_create_param.minOutBufSize;
 		}
 	}
 	else{
-		OSA_printf("not enc and not dec, what you want to do?\n");
+		OSA_printf("ppahandle2 not enc and not dec, what you want to do?\n");
 		goto cleanup;
 	}
-	*/
 
-	for(i=0;i<num_inst;i++)
-	{
-			/* 创建输入队列 */
-		status = OSA_queCreate(&(pahandle[i].paenchandle->indata_user_handle.empty_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
-		OSA_assert(status == OSA_SOK);
-		status = OSA_queCreate(&(pahandle[i].paenchandle->indata_user_handle.full_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
-		OSA_assert(status == OSA_SOK);
-
-		for(index = 0; index < AUDIO_ENCDEC_INBUF_QUE_MAX; index++){				
-			pahandle[i].paenchandle->inbuf_node[index].addr = audio_allocate_sharedregionbuf(pahandle[i].paenchandle->inbuf_size);
-			pahandle[i].paenchandle->inbuf_node[index].buf_size = pahandle[i].paenchandle->inbuf_size;
-			
-			status = OSA_quePut(&(pahandle[i].paenchandle->indata_user_handle.empty_que),
-			                    (Int32) &(pahandle[i].paenchandle->inbuf_node[index]),
-			                    OSA_TIMEOUT_NONE);
-			OSA_assert(status == OSA_SOK);
-		}
-	
-
-		/* 创建输出队列 */
-		status = OSA_queCreate(&(pahandle[i].paenchandle->outdata_user_handle.full_que), AUDIO_ENCDEC_OUTBUF_QUE_MAX);
-		OSA_assert(status == OSA_SOK);
-		status = OSA_queCreate(&(pahandle[i].paenchandle->outdata_user_handle.empty_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
-		OSA_assert(status == OSA_SOK);
-		for(index = 0; index < AUDIO_ENCDEC_OUTBUF_QUE_MAX; index++){
-			pahandle[i].paenchandle->outbuf_node[index].addr = audio_allocate_sharedregionbuf(pahandle[i].paenchandle->outbuf_size);
-			pahandle[i].paenchandle->outbuf_node[index].buf_size = pahandle[i].paenchandle->outbuf_size;
-			
-			status = OSA_quePut(&(pahandle[i].paenchandle->outdata_user_handle.full_que),
-			                    (Int32) &(pahandle[i].paenchandle->outbuf_node[index]),
-			                    OSA_TIMEOUT_NONE);
-			OSA_assert(status == OSA_SOK);
-		}
-	}
-		/* 
-	status = OSA_queCreate(&(ppahandle2->indata_user_handle.empty_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
+	/* 创建输入队列 */
+	status = OSA_queCreate(&(pahandle->paenchandle->indata_user_handle.empty_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
 	OSA_assert(status == OSA_SOK);
-	status = OSA_queCreate(&(ppahandle2->indata_user_handle.full_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
+	status = OSA_queCreate(&(pahandle->paenchandle->indata_user_handle.full_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
 	OSA_assert(status == OSA_SOK);
-	for(index = 0; index < AUDIO_ENCDEC_INBUF_QUE_MAX; index++){	
-		ppahandle2->inbuf_node[index].addr = audio_allocate_sharedregionbuf(ppahandle2->inbuf_size);
-		ppahandle2->inbuf_node[index].buf_size = ppahandle2->inbuf_size;
-		
-		status = OSA_quePut(&(ppahandle2->indata_user_handle.empty_que),
-		                    (Int32) &(ppahandle2->inbuf_node[index]),
+
+	for(index = 0; index < AUDIO_ENCDEC_INBUF_QUE_MAX; index++){				
+		pahandle->paenchandle->inbuf_node[index].addr = audio_allocate_sharedregionbuf(pahandle->paenchandle->inbuf_size);
+		pahandle->paenchandle->inbuf_node[index].buf_size = pahandle->paenchandle->inbuf_size;
+		status = OSA_quePut(&(pahandle->paenchandle->indata_user_handle.empty_que),
+		                    (Int32) &(pahandle->paenchandle->inbuf_node[index]),
 		                    OSA_TIMEOUT_NONE);
 		OSA_assert(status == OSA_SOK);
 	}
 
-
-	 创建第二路输出队列 
-	status = OSA_queCreate(&(ppahandle2->outdata_user_handle.full_que), AUDIO_ENCDEC_OUTBUF_QUE_MAX);
+	/* 创建输出队列 */
+	status = OSA_queCreate(&(pahandle->paenchandle->outdata_user_handle.full_que), AUDIO_ENCDEC_OUTBUF_QUE_MAX);
 	OSA_assert(status == OSA_SOK);
-	status = OSA_queCreate(&(ppahandle2->outdata_user_handle.empty_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
+	status = OSA_queCreate(&(pahandle->paenchandle->outdata_user_handle.empty_que), AUDIO_ENCDEC_INBUF_QUE_MAX);
 	OSA_assert(status == OSA_SOK);
 	for(index = 0; index < AUDIO_ENCDEC_OUTBUF_QUE_MAX; index++){
-		ppahandle2->outbuf_node[index].addr = audio_allocate_sharedregionbuf(ppahandle2->outbuf_size);
-		ppahandle2->outbuf_node[index].buf_size = ppahandle2->outbuf_size;
-		
-		status = OSA_quePut(&(ppahandle2->outdata_user_handle.full_que),
-		                    (Int32) &(ppahandle2->outbuf_node[index]),
+		pahandle->paenchandle->outbuf_node[index].addr = audio_allocate_sharedregionbuf(pahandle->paenchandle->outbuf_size);
+		pahandle->paenchandle->outbuf_node[index].buf_size = pahandle->paenchandle->outbuf_size;
+		status = OSA_quePut(&(pahandle->paenchandle->outdata_user_handle.full_que),
+		                    (Int32) &(pahandle->paenchandle->outbuf_node[index]),
 		                    OSA_TIMEOUT_NONE);
 		OSA_assert(status == OSA_SOK);
 	}
 
-	*/
 	/* 创建音频编码线程*/	
-
-	for(i=0;i<num_inst;i++)
-	{	
-		pahandle[i].paenchandle->run_status = TRUE;
-	}
+	pahandle->paenchandle->run_status = TRUE;
 //	printf("audio_encThread = %p\n",audio_encThread);
-	status = OSA_thrCreate(&(pahandle[0].paenchandle->indata_thr),
+	status = OSA_thrCreate(&(pahandle->paenchandle->indata_thr),
 	                       (OSA_ThrEntryFunc)audio_encThread,
 	                       AUDIO_INDATA_GET_FXN_TSK_PRI,
 	                       AUDIO_INDATA_GET_FXN_TSK_STACK_SIZE,
@@ -1010,10 +858,10 @@ Int32 audio_encdec_create_inst(audio_struct *pahandle,
 
 	/* 创建采集音频线程 */
 	if(user_indata_get_fxn != NULL ){
-		pahandle[0].paenchandle->indata_user_handle.run_status = TRUE;
+		pahandle->paenchandle->indata_user_handle.run_status = TRUE;
 		
-		status = OSA_thrCreate(&(pahandle[0].paenchandle->user_indata_thr),
-		                       (OSA_ThrEntryFunc)pahandle[0].paenchandle->user_indata_get_fxn,
+		status = OSA_thrCreate(&(pahandle->paenchandle->user_indata_thr),
+		                       (OSA_ThrEntryFunc)pahandle->paenchandle->user_indata_get_fxn,
 		                       AUDIO_INDATA_GET_FXN_TSK_PRI,
 		                       AUDIO_INDATA_GET_FXN_TSK_STACK_SIZE,
 		                       (pahandle));
@@ -1023,10 +871,10 @@ Int32 audio_encdec_create_inst(audio_struct *pahandle,
 	
 	/* 创建发送给encodermanager线程 */
 	if(user_outdata_put_fxn != NULL){
-		pahandle[0].paenchandle->outdata_user_handle.run_status = TRUE;
+		pahandle->paenchandle->outdata_user_handle.run_status = TRUE;
 		
-		status = OSA_thrCreate(&(pahandle[0].paenchandle->user_outdata_thr),
-		                       (OSA_ThrEntryFunc)pahandle[0].paenchandle->user_outdata_put_fxn,
+		status = OSA_thrCreate(&(pahandle->paenchandle->user_outdata_thr),
+		                       (OSA_ThrEntryFunc)pahandle->paenchandle->user_outdata_put_fxn,
 		                       AUDIO_INDATA_GET_FXN_TSK_PRI,
 		                       AUDIO_INDATA_GET_FXN_TSK_STACK_SIZE,
 		                       pahandle);
@@ -1038,10 +886,13 @@ Int32 audio_encdec_create_inst(audio_struct *pahandle,
 	
 cleanup:
 
-	pahandle[0].paenchandle->run_status = FALSE;
+	pahandle->paenchandle->run_status = FALSE;
 		
-	if(pahandle[0].paenchandle != NULL)
-		free(pahandle[0].paenchandle);
+	if(pahandle->paenchandle != NULL)
+	{
+		free(pahandle->paenchandle);
+		pahandle->paenchandle = NULL;
+	}
 		
 	return -1;
 }

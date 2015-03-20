@@ -30,7 +30,7 @@
 
 #define SW_MS_SKIP_PROCESSING           (2)
 
-#define SW_MS_SKIP_INPUT_FRAMES_SC    (3)//  (2)
+#define SW_MS_SKIP_INPUT_FRAMES_SC      (2)
 #define SW_MS_SKIP_INPUT_FRAMES_DEI     (3)
 
 #define SW_MS_MAX_WIDTH_SUPPORTED       (1920)
@@ -158,6 +158,8 @@ typedef struct SwMsLink_chObj
     AvsyncLink_VidQueObj inQue;
     FVID2_Frame *inQueMem[SWMS_LINK_MAX_FRAMES_PER_CH];
     /**< Memory for in que data - video frames */
+    Bool chRtInInfoUpdate;
+    Bool chRtInfoUpdate;
 } SwMsLink_chObj;
 
 
@@ -373,6 +375,8 @@ Int32 SwMsLink_drvFreeProcessedFrames(SwMsLink_Obj * pObj,
 Int32 SwMsLink_printBufferStatus (SwMsLink_Obj * pObj);
 Int32 SwMsLink_flushBuffers(SwMsLink_Obj * pObj,SwMsLink_FlushParams *prm);
 
+Int32 SwMsLink_drvSetInChInfo(SwMsLink_Obj * pObj, SwMsLink_InChInfo *pchinfo);
+Int32 SwMsLink_drvSetAutoGetInChInfo(SwMsLink_Obj * pObj, Int32 chId);
 #endif
 
 

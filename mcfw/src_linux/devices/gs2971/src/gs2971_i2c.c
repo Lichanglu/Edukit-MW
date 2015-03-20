@@ -18,7 +18,7 @@ static int gGS2971_Mode=-1;
 static int gGS2971_TMDS = -1;
 static int gGS2971_Hpv = 0;
 static int gGS2971_Vps = 0;
-static int gGS2971_CurStatus=-1;
+//static int gGS2971_CurStatus=-1;
 
 static int g_fpga_vesion = 0;
 
@@ -33,8 +33,6 @@ static Vps_Gs2971_hpv_vps gs2971_gLineNum[DEVICE_STD_REACH_LAST] = {
 	{"480P",		0xFFFF,0xFFFF,0xFFFF,0,0}, // 7-480px60             
 	{"576P",		0xFFFF,0xFFFF,0xFFFF,0,0},  // 8-576px50
 #if 1	
-	{"720P30",	750,30,2222,1280,720},  // 9-1280x720x60 
-	{"720P25",	750,25,2666,1280,720},  // 10-1280x720x50 
 	{"720P60",	750,60,1111,1280,720},  // 9-1280x720x60 
 	{"720P50",	750,50,1333,1280,720},  // 10-1280x720x50 
 	{"1080I60",	563,60,1481,1920,540},  // 11-1920x1080x60i                 
@@ -108,8 +106,6 @@ static Vps_Gs2971_sav_eav_vbi  gs2971_SavEavVbi[DEVICE_STD_REACH_LAST] = {
 	{"480P",		0x00,0x00,0x00,0x00},  			// 7-480px60     
 	{"576P",		0x00,0x00,0x00,0x00},			// 8-576px50   
 
-	{"720P30",	100,0x00,0x00,10},		// 9-1280x720x60
-	{"720P25",	100,0x00,0x00,10},  		// 10-1280x720x50           
 	{"720P60",	365,0x00,0x00,29},		// 9-1280x720x60
 	{"720P50",	695,0x00,0x00,29},  		// 10-1280x720x50           
 	{"1080I60",	275,0x00,0x00,21},		// 11-1920x1080x60i              	
@@ -160,7 +156,7 @@ static Vps_Gs2971_sav_eav_vbi  gs2971_SavEavVbi[DEVICE_STD_REACH_LAST] = {
 														//Used in display mode. */
 	{"Max",0x00,0x00,0x00,0x00} // FVID2_STD_MAX
 };
-
+#if 0
 static Vps_Gs2971_InMode ArgMode_GS2971[DEVICE_STD_REACH_LAST] = {
 	{"480I",0x00,0x21,0x5d,0x10,0xe8,0x70,0xd0,0x01,0x7e,0x4e,0x20},  	// 0-480ix60                                                
 	{"576I",0x0d,0x21,0x5F,0xd0,0x21,0x5d,0xd0,0x0d,0x21,0x5d,0xd0},  	// 1-576ix50     
@@ -171,8 +167,6 @@ static Vps_Gs2971_InMode ArgMode_GS2971[DEVICE_STD_REACH_LAST] = {
 	{"Revs",0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},  	// FVID2_STD_D1, /**< Interlaced, 720x240 per field NTSC, 720x288 per field PAL. */                                               
 	{"480P60",0x07,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 7-480px60     
 	{"576P50",0x00,0x21,0x5d,0xd0,0xE6,0x90,0xd0,0x02,0x58,0x32,0x00},	// 8-576px50   
-	{"720P30",0x0a,0x21,0x5F,0xd0,0xe6,0x80,0xd0,0x02,0x7f,0x2e,0xe0},	// 9-1280x720x60
-	{"720P25",0x2a,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 10-1280x720x50           
 	{"720P60",0x0a,0x21,0x5F,0xd0,0xe6,0x80,0xd0,0x02,0x7f,0x2e,0xe0},	// 9-1280x720x60
 	{"720P50",0x2a,0x21,0x5F,0xd0,0x21,0x5F,0xd0,0x07,0x21,0x5F,0xd0},  	// 10-1280x720x50           
 	{"1080I60",0x0c,0x21,0x5d,0x10,0x21,0x5d,0x10,0x05,0x21,0x5d,0x10},	// 11-1920x1080x60i              	
@@ -223,19 +217,19 @@ static Vps_Gs2971_InMode ArgMode_GS2971[DEVICE_STD_REACH_LAST] = {
 														//Used in display mode. */
 	{"Max",0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF} // FVID2_STD_MAX
 };
-
+#endif
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
 UInt16 Device_gs2971_Read16_CPLD(Device_Gs2971Obj * pObj, UInt8 RegAddr)
 {
-	Int32 status = 0;
+//	Int32 status = 0;
 	UInt8 regAddr[1]={0};
 	UInt8 regValue[2]={0};
 	UInt16 data;
 	
 	regAddr[0] = RegAddr;
-	OSA_CPLD_i2cRead16(&gDevice_gs2971CommonObj.i2cHandle,0, regAddr, regValue, 2);
+	OSA_CPLD_i2cRead16(&gDevice_gs2971CommonObj.i2cHandle,GS2971_IIC_SLAVE_ADDR, regAddr, regValue, 2);
 	data = regValue[1]<<8 | regValue[0];
 	
 	return data;
@@ -250,7 +244,7 @@ UInt16 Device_gs2971_Write16_CPLD(Device_Gs2971Obj * pObj, UInt8 RegAddr, UInt16
 	regAddr[0] = RegAddr;
 	regValue[0] = RegVal&0xFF;
 	regValue[1] = (RegVal&0xFF00)>>8;
-	status = OSA_CPLD_i2cWrite16 (&gDevice_gs2971CommonObj.i2cHandle, 0, regAddr, regValue, 2 );
+	status = OSA_CPLD_i2cWrite16 (&gDevice_gs2971CommonObj.i2cHandle, GS2971_IIC_SLAVE_ADDR, regAddr, regValue, 2 );
 
 	return status;
 }
@@ -307,12 +301,27 @@ static Int32 Device_gs2971GetResolution(Device_Gs2971Obj *pObj)
 	Int32 	hsfq = 0, linenum=0;
 	int i=0, inMode=0;;
 	unsigned short cpld_version=0;
-	unsigned short data;
+//	unsigned short data;
+	int val ;
+	Device_gs2971Reset(pObj);
+	val = Device_gs2971_Read16_CPLD(pObj,  0x18);
+		printf("GS2971 VAL =%x \n",val);
+	val = val|0x01;
+
+	Device_gs2971_Write16_CPLD(pObj,  0x18 ,val) ;
+
 
 	cpld_version = Device_gs2971_Read16_CPLD(pObj, 15*2);
-	hsfq  = Device_gs2971_Read16_CPLD(pObj, 0x8*2);
-	linenum  = Device_gs2971_Read16_CPLD(pObj, 0x9*2);
-
+//new hardware	
+//	hsfq  = Device_gs2971_Read16_CPLD(pObj, 0*2);
+//	linenum  = Device_gs2971_Read16_CPLD(pObj, 1*2);
+//old hardware
+	hsfq  = Device_gs2971_Read16_CPLD(pObj, 8*2);
+	linenum  = Device_gs2971_Read16_CPLD(pObj, 9*2);
+	printf("GS2971 cpld_version =%x \n",cpld_version);
+	printf("GS2971 hsfq =%x \n",hsfq);
+	printf("GS2971 linenum =%x \n",linenum);
+	
 	g_fpga_vesion = cpld_version;
 	for(i = 0;i<DEVICE_STD_REACH_LAST;i++){
 		if(((hsfq>gs2971_gLineNum[i].lps-10)&&(hsfq<gs2971_gLineNum[i].lps+10))&&((linenum>gs2971_gLineNum[i].hpv-4)&&(linenum<gs2971_gLineNum[i].hpv+4))){
@@ -384,9 +393,9 @@ Int32 Device_gs2971SetDirection ( Device_Gs2971Obj * pObj,
                              unsigned int *direction )
 {
 	Int32 status = 0;
-	Int32 inMode = 0,tmds=0;
+	Int32 inMode =0;
 	Int32 val;
-	Int32 sav,eav,s_vbi,e_vbi;
+	Int32 sav,e_vbi;
 
 	inMode = gGS2971_Mode;
 	val = *direction;
@@ -409,9 +418,9 @@ Int32 Device_gs2971GetDirection ( Device_Gs2971Obj * pObj,
                              unsigned int *direction )
 {
 	Int32 status = 0;
-	Int32 inMode = 0,tmds=0;
+	Int32 inMode =0;
 	Int32 val;
-	Int32 sav,eav,s_vbi,e_vbi;
+	Int32 sav,e_vbi;
 
 	inMode = gGS2971_Mode;
 	val = *direction;
@@ -461,10 +470,19 @@ Int32 Device_gs2971SetVideoMode ( Device_Gs2971Obj * pObj,
     return status;
 }
 
+int gs_cnt1=0;
 /* reset ADV7441 OFM logic  */
 Int32 Device_gs2971Reset ( Device_Gs2971Obj * pObj )
 {
 	Int32           retVal = 0;
+	//retVal = Device_gs2971_Read16_CPLD(pObj, 12*2);
+	//retVal =retVal |0x12;
+	//Device_gs2971_Write16_CPLD(pObj, 12*2,retVal );
+	if(gs_cnt1)
+	return 0;
+	gs_cnt1=1;
+
+	OSA_i2cCreate(2);
 	printf("GS2971 Reset OK!\n");
 	return (retVal);    
 }

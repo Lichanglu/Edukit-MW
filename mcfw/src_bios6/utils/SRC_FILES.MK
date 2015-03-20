@@ -1,6 +1,7 @@
 
 SRCS_COMMON += utils_que.c utils_buf.c utils_mbx.c utils_tsk.c \
 		utils_prf.c utils_mem.c utils.c utils_bit_buf.c utils_buf_ext.c \
+		utils_getpll_info.c
         
 	
 		 

@@ -27,9 +27,9 @@
 do {                                                                      \
     extern volatile Int g_AssertFailLoop;                                 \
     if (!(y)) {                                                           \
+        while(g_AssertFailLoop)                                          \
         Vps_printf (" %d: Assertion @ Line: %d in %s: %s : failed !!!\n", \
                 Utils_getCurTimeInMsec(), __LINE__, __FILE__, #y);                \
-        while(g_AssertFailLoop);                                          \
     }                                                                     \
 } while (0)
 

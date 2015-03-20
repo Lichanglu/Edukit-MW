@@ -117,7 +117,7 @@ typedef struct {
 
 } DisplayLink_Obj;
 
-
+Int32 DisplayLink_drvDisplayAllocAndQueBlankFrame(DisplayLink_Obj * pObj);
 Int32 DisplayLink_drvCreate(DisplayLink_Obj * pObj,
                             DisplayLink_CreateParams * pPrm);
 Int32 DisplayLink_drvStart(DisplayLink_Obj * pObj);
@@ -135,5 +135,6 @@ Int32 DisplayLink_drvSetFmt(DisplayLink_Obj * pObj, FVID2_Format *pFormat);
 Int32 DisplayLink_drvSwitchInputMode(DisplayLink_Obj * pObj, DisplayLink_SwitchInputMode *pPrm);
 
 Int32 DisplayLink_printBufferStatus(DisplayLink_Obj * pObj);
+Int32 DisplayLink_freeFrame(DisplayLink_Obj * pObj);
 
 #endif

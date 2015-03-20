@@ -53,6 +53,8 @@
 #define SCLR_LINK_CMD_SET_INPUTFRAME_RATE      (0x7008)
 
 #define SCLR_LINK_CMD_SET_SCLR_MODE         (0x7009) /* add stretch Mode */
+#define SCLR_LINK_CMD_SET_INCHAN_INFO         (0x7010)
+#define SCLR_LINK_CMD_SET_AUTO_GET_INCHAN_INFO         (0x7011)
 
 #define SCLR_LINK_SC5               0
 #define SCLR_LINK_SEC0_SC3          1
@@ -122,9 +124,9 @@ typedef struct
 typedef struct
 {
     Bool SclrMode;
+	UInt32 chId;
 
 } SclrLink_SclrMode;
-
 
 typedef struct
 {
@@ -155,6 +157,12 @@ typedef union
         SclrLink_OutputScaleRatio    heightRatio;    
     } ratio;
 } SclrLink_OutputScaleFactor;
+
+typedef struct
+{
+	UInt32 chid;
+	System_LinkChInfo chinfo;
+}System_LinkChInfo2;
 
 /**
     \brief Sclr link create parameters

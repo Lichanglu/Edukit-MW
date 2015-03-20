@@ -1,0 +1,16 @@
+*.o
+*.ko
+*.obj
+*.pdf
+*.orig
+*.rar
+*.mod.c
+*.o.cmd
+*.ko.cmd
+
+.tmp_versions
+Module.symvers
+modules.order
+*.DEPEND
+build_info.h
+git_version.h

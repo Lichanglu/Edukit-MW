@@ -132,7 +132,7 @@ Int32 MergeLink_drvProcessFrames(MergeLink_Obj * pObj)
     FVID2_Frame *pFrame;
     System_FrameInfo *pFrameInfo;
     Bool newDataAvailable;
-	UInt32 MergeID;
+//	UInt32 MergeID;
     newDataAvailable = FALSE;
 
     pCreateArgs = &pObj->createArgs;
@@ -154,7 +154,7 @@ Int32 MergeLink_drvProcessFrames(MergeLink_Obj * pObj)
                 UTILS_assert(pFrame->channelNum < pObj->inQueMaxCh[inQue]);
 
 
-				MergeID = SYSTEM_GET_LINK_ID(pObj->tskId)- SYSTEM_LINK_ID_MERGE_0;
+			//	MergeID = SYSTEM_GET_LINK_ID(pObj->tskId)- SYSTEM_LINK_ID_MERGE_0;
 				/* 保存之前的通道ID */
 			//	pFrameInfo->mergeChannelNum[MergeID] = pFrame->channelNum;
 

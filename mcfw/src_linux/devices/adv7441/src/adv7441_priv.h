@@ -305,4 +305,21 @@ Int32 Device_adv7441SetExtendedSettings( Device_Adv7441Obj * pObj);
 
 Int32 Device_adv7441SetIndirectRegisters(Device_Adv7441Obj * pObj);
 
+Int32 Device_adv7441SetDirection ( Device_Adv7441Obj * pObj,
+                             unsigned int *direction );
+Int32 Device_adv7441GetDirection ( Device_Adv7441Obj * pObj,
+                             unsigned int *direction );
+Int32 Device_adv7441SetSourceChan ( Device_Adv7441Obj * pObj,
+						unsigned int *source);
+Int32 Device_adv7441GetSourceChan ( Device_Adv7441Obj * pObj,
+						unsigned int *source);
+Int32 Device_adv7441InvertCbCr ( Device_Adv7441Obj * pObj);
+Int32 Device_adv7441_CSC ( Device_Adv7441Obj * pObj,unsigned char *data);
+Int32 Device_adv7441GetHDCP(Device_Adv7441Obj * pObj, Int32 *hdcp);
+Int32 Device_adv7441GetExternInformation(Device_Adv7441Obj * pObj,
+							Device_VideoDecoderExternInforms* extenInfor);
+Int32 Device_adv7441_SetFPGAMode(int fpgaMode);
+
+
+
 #endif /*  _DEVICE_ADV7441_PRIV_H_  */

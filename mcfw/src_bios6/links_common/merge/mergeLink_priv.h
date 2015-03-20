@@ -11,7 +11,7 @@
 #include <mcfw/src_bios6/links_common/system/system_priv_common.h>
 #include <mcfw/interfaces/link_api/mergeLink.h>
 
-#define MERGE_LINK_OBJ_MAX   (5)
+#define MERGE_LINK_OBJ_MAX   (6)
 
 #define MERGE_LINK_MAX_CH_PER_IN_QUE    (SYSTEM_MAX_CH_PER_OUT_QUE)
 

@@ -381,7 +381,7 @@ Int EncLinkJPEG_algDynamicParamUpdate(EncLink_JPEGObj * hObj,
 Int32 EncLink_resetStatistics(EncLink_Obj * pObj);
 Int32 EncLink_printStatistics (EncLink_Obj * pObj, Bool resetAfterPrint);
 Int32 EncLink_printBufferStatus (EncLink_Obj * pObj);
-
+void EncLink_resetSkipFrame(EncLink_Obj *pObj);
 #ifdef SYSTEM_DEBUG_ENC
 #define ENCLINK_INFO_LOG(linkID,chID,...)       do {                           \
                                                      Vps_printf(               \
@@ -421,5 +421,4 @@ Int32 EncLink_printBufferStatus (EncLink_Obj * pObj);
         }                                                                      \
       } while (0)
 
-#endif                                                     /* _ENC_LINK_PRIV_H_
-                                                            */
+#endif                                                     /* _ENC_LINK_PRIV_H_*/

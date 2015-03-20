@@ -26,7 +26,11 @@ Void C6XDSP_main(UArg arg0, UArg arg1)
 }
 Int32 main(void)
 {
-    Utils_setCpuFrequency(SYSTEM_DSP_FREQ);
+    float dspFreq = Utils_getFrequency(PLL_MODULE_DSP);
+    if (dspFreq <= 0)  
+        dspFreq = SYSTEM_DSP_FREQ;
+    Utils_setCpuFrequency(dspFreq*1000*1000);
+	
     System_start(C6XDSP_main);
     BIOS_start();
 

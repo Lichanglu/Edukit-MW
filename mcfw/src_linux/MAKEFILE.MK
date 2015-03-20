@@ -15,6 +15,15 @@ utils:
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/utils/mem_stats MODULE=mem_stats $(TARGET)	
 
 mcfw_api:
+	echo "---------------------mcfw_api git----------------------------------"
+	@echo "const static char *g_make_build_date = \"`env LANG=en_US.UTF-8 date`\";" >$(dvr_rdk_PATH)/mcfw/src_linux/mcfw_api/build_info.h
+	@sed -e "s#<version>#$$(git describe --dirty --always)#g" <$(dvr_rdk_PATH)/mcfw/git_version.h.in> $(dvr_rdk_PATH)/mcfw/git_version.h.tmp
+	@if diff -q $(dvr_rdk_PATH)/mcfw/git_version.h.tmp $(dvr_rdk_PATH)/mcfw/git_version.h >/dev/null 2>&1; then \
+		rm $(dvr_rdk_PATH)/mcfw/git_version.h.tmp; \
+	else \
+		echo "git_version.h.in =>$(dvr_rdk_PATH)/mcfw/src_linux/mcfw_api/git_version.h" ; \
+	mv $(dvr_rdk_PATH)/mcfw/git_version.h.tmp $(dvr_rdk_PATH)/mcfw/src_linux/mcfw_api/git_version.h; \
+	fi	
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/mcfw_api MODULE=dvr_rdk_mcfw_api $(TARGET)
 
 link_api:
@@ -38,12 +47,16 @@ osa:
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/thsfilters/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/adv7441/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/adv7442/src MODULE=dvr_rdk_osa $(TARGET)
+	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/adv7844/src MODULE=dvr_rdk_osa $(TARGET)
+	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/adv7844_2/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/tvp7002/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/adv7619/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/ad9889/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/gs2971/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/gs2972/src MODULE=dvr_rdk_osa $(TARGET)
 	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/ths8200/src MODULE=dvr_rdk_osa $(TARGET)
+	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/gv7601/src MODULE=dvr_rdk_osa $(TARGET)
+	$(MAKE) -fMAKEFILE.MK -C$(dvr_rdk_PATH)/mcfw/src_linux/devices/gv7602/src MODULE=dvr_rdk_osa $(TARGET)
 
 fbdev:
 ifneq ($(OS),Windows_NT)

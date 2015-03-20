@@ -688,13 +688,15 @@ static Int32 enclink_codec_set_ch_alg_create_params(EncLink_Obj * pObj,
 	pChAlgCreatePrm->maxWidth           = pInChInfo->width;
 	pChAlgCreatePrm->maxHeight          = pInChInfo->height;
 	pChAlgCreatePrm->maxInterFrameInterval = pChDynPrm->interFrameInterval;
-	
-	Vps_printf("pChAlgCreatePrm->maxWidth = %d, pChAlgCreatePrm->maxHeight = %d\n",
+
+
+	Vps_printf("ch=%d...pChAlgCreatePrm->maxWidth = %d, pChAlgCreatePrm->maxHeight = %d\n",chId,
 	           pChAlgCreatePrm->maxWidth, pChAlgCreatePrm->maxHeight);
 	           
 	pChAlgCreatePrm->inputContentType =
 	    Utils_encdecMapFVID2XDMContentType(pInChInfo->scanFormat);
-	    
+
+		
 	pChAlgCreatePrm->inputChromaFormat  =
 	    Utils_encdecMapFVID2XDMChromaFormat(pInChInfo->dataFormat);
 	    
@@ -710,7 +712,7 @@ static Int32 enclink_codec_set_ch_alg_create_params(EncLink_Obj * pObj,
 	                          
 	Vps_printf("pChAlgCreatePrm->maxWidth = %d pChAlgCreatePrm->maxHeight =%d %d\n",pChAlgCreatePrm->maxWidth,pChAlgCreatePrm->maxHeight,pChAlgCreatePrm->level);
 //	pChAlgCreatePrm->level = IH264_LEVEL_51;
-	pChAlgCreatePrm->level = pChCreatePrm->encLevel;
+//	pChAlgCreatePrm->level = pChCreatePrm->encLevel;
 	pChAlgCreatePrm->tilerEnable = FALSE;
 	
 	if (pInChInfo->memType == VPS_VPDMA_MT_TILEDMEM)
@@ -738,7 +740,7 @@ static Int32 enclink_codec_set_ch_alg_create_params(EncLink_Obj * pObj,
 	pChAlgCreatePrm->numTemporalLayer  = pChCreatePrm->numTemporalLayer;
 	pChAlgCreatePrm->enableSVCExtensionFlag = pChCreatePrm->enableSVCExtensionFlag;
 	pChAlgCreatePrm->enableWaterMarking = pChCreatePrm->enableWaterMarking;
-	
+
 	return ENC_LINK_S_SUCCESS;
 }
 
@@ -898,7 +900,7 @@ static Void EncLink_codecProcessTskFxn(UArg arg1, UArg arg2)
 			     preparing the processList.
 			  3. The Batch size is limited to 24 (Comes from codec limitation)
 			  */
-			
+			pReqObj->InFrameList.frames[0]->timeStamp = Utils_getCurTimeInMsec();
 			status = EncLink_PrepareBatch (pObj, tskId, pReqObj,
 			                               &pObj->reqObjBatch[tskId]);
 			if (UTILS_ISERROR(status))
@@ -955,7 +957,9 @@ static Void EncLink_codecProcessTskFxn(UArg arg1, UArg arg2)
 			/**TODO: Remove this hack of setting timestamp.
 			 * Timestamp should be system time logged in capture component
 			*/
-			pReqObj->OutBuf->timeStamp =  pReqObj->InFrameList.frames[0]->timeStamp;
+			//pReqObj->OutBuf->timeStamp =  pReqObj->InFrameList.frames[0]->timeStamp;
+			/*设置dts*/
+			pReqObj->OutBuf->encodeTimeStamp =  pReqObj->InFrameList.frames[0]->timeStamp;
 			
 			status = Utils_quePut(&pObj->processDoneQue, pReqObj,
 			                      BIOS_NO_WAIT);
@@ -1221,7 +1225,7 @@ static Int32 EncLink_codecQueueFramesToChQue(EncLink_Obj * pObj)
 	Int32 status;
 	UInt32 curTime;
 	Bool skipFrame;
-	UInt32 Time_interval=0;
+//	UInt32 Time_interval=0;
 	
 	pInQueParams = &pObj->createArgs.inQueParams;
 	
@@ -1256,9 +1260,10 @@ static Int32 EncLink_codecQueueFramesToChQue(EncLink_Obj * pObj)
 		if(pChObj->forceDumpFrame == FALSE)
 		{
 			skipFrame = EncLink_doSkipFrame_Only30fps(pChObj, pFrame->channelNum);
-
+			//Need Think  Lichl
 			if (pChObj->forceAvoidSkipFrame == TRUE)
 				skipFrame = FALSE;
+				
 		}
 		else
 		{
@@ -1416,6 +1421,7 @@ static Int32 EncLink_codecSubmitData(EncLink_Obj * pObj)
 				}
 				else
 				{
+					//Vps_printf("===============encSkip:chId:%d\n",chId);
 					/* Free the input frame if output buffer is not available */
 					for (i=0; i<pReqObj->InFrameList.numFrames; i++)
 					{
@@ -1505,6 +1511,7 @@ static Int32 EncLink_codecGetProcessedData(EncLink_Obj * pObj)
 	FVID2_FrameList inFrameList;
 	UInt32 chId, i, latency;
 	Bitstream_BufList outBitBufList;
+	Bitstream_BufList outBitEmptyBufList;
 	System_LinkInQueParams *pInQueParams;
 	EncLink_ChObj *pChObj;
 	Int32 status = FVID2_EFAIL;
@@ -1515,6 +1522,7 @@ static Int32 EncLink_codecGetProcessedData(EncLink_Obj * pObj)
 	outBitBufList.numBufs = 0;
 	outBitBufList.appData = NULL;
 	inFrameList.numFrames = 0;
+	outBitEmptyBufList.numBufs = 0;
 	curTime = Utils_getCurTimeInMsec();
 	
 	while (!Utils_queIsEmpty(&pObj->processDoneQue)
@@ -1558,13 +1566,23 @@ static Int32 EncLink_codecGetProcessedData(EncLink_Obj * pObj)
 			    pReqObj->InFrameList.frames[i];
 			inFrameList.numFrames++;
 		}
+
+		if(pReqObj->OutBuf->fillLength > 0)
+		{
+			outBitBufList.bufs[outBitBufList.numBufs] = pReqObj->OutBuf;
+			outBitBufList.numBufs++;
+		}
+		/*没有编码，直接把输出buff换回空buff队列*/
+		else
+		{
+			outBitEmptyBufList.bufs[outBitEmptyBufList.numBufs] = pReqObj->OutBuf;
+			outBitEmptyBufList.numBufs++;
+		}
 		
-		outBitBufList.bufs[outBitBufList.numBufs] = pReqObj->OutBuf;
-		outBitBufList.numBufs++;
+		//pReqObj->OutBuf->encodeTimeStamp = Utils_getCurTimeInMsec();
 		
-		pReqObj->OutBuf->encodeTimeStamp = Utils_getCurTimeInMsec();
-		
-		latency = pReqObj->OutBuf->encodeTimeStamp - pReqObj->OutBuf->timeStamp;
+		//latency = pReqObj->OutBuf->encodeTimeStamp - pReqObj->OutBuf->timeStamp;
+		latency = Utils_getCurTimeInMsec() - pReqObj->InFrameList.frames[0]->timeStamp;
 		
 		if(latency>pChObj->maxLatency)
 			pChObj->maxLatency = latency;
@@ -1594,6 +1612,13 @@ static Int32 EncLink_codecGetProcessedData(EncLink_Obj * pObj)
 		                           pInQueParams->prevLinkQueId,
 		                           &inFrameList);
 		pObj->inFramePutCount += inFrameList.numFrames;
+	}
+
+	if (outBitEmptyBufList.numBufs)
+	{
+		status = Utils_bitbufPutEmpty(&pObj->outObj.bufOutQue,
+		                             &outBitEmptyBufList);
+		UTILS_assert(status == FVID2_SOK);
 	}
 	
 	
@@ -1845,8 +1870,14 @@ Int32 EncLink_printStatistics (EncLink_Obj * pObj, Bool resetAfterPrint)
 		            pChObj->minLatency,
 		            pChObj->maxLatency
 		          );
+
+		if((pChObj->inFrameRecvCount) == (pChObj->inFrameUserSkipCount))
+		{
+			Vps_printf("enc-error:chId:%d,frame_cnt:%d,start_time:%d,frame_mis:%d,prev_fps:%d,FrameRate:%d\n",
+				chId,pChObj->frame_cnt,pChObj->start_time,pChObj->frame_mis,pChObj->prev_fps,pChObj->algObj.algDynamicParams.targetFrameRate);
+		}
 	}
-	
+
 	Vps_printf( " \n");
 	Vps_printf("Multi Channel Encode Average Submit Batch Size \n");
 	Vps_printf("Max Submit Batch Size : %d\n", ENC_LINK_GROUP_SUBM_MAX_SIZE);
@@ -1963,9 +1994,9 @@ Int32 EncLink_codecSetFps(EncLink_Obj * pObj, EncLink_ChFpsParams * params)
 
 
 	//pChObj->algObj.algDynamicParams.targetFrameRate = params->targetFps;
-	Vps_printf("--------EncLink_codecSetFps [%d] [%d] [%d]---------\n",\
+	Vps_printf("--------EncLink_codecSetFps [%d] [%d] [%d],chId:%d---------\n",\
 				params1.inputFps, pObj->ulHistoryFrameRate[params->chId],\
-				params->targetFps);
+				params->targetFps,params->chId);
     if(params->targetBitRate != 0)
     {
         pChObj->algObj.algDynamicParams.targetBitRate = params->targetBitRate;
@@ -2160,11 +2191,11 @@ Int32 EncLink_codecEnableChannel(EncLink_Obj * pObj,
 #define 	MP_INTERVAL_TIME      3000
 #define  STD_FPS_30			2997
 #define  STD_FPS_25			2500
-#define FRAME_MAX_CNT		40000
+#define FRAME_MAX_CNT		4000
 
 Bool  EncLink_doSkipFrame_Only30fps(EncLink_ChObj *pChObj, Int32 chId)
 {	
-	UInt32 fps=0;
+	//UInt32 fps=0;
 	UInt32 timeout=0;
 	UInt32 std_fps=0;
 	UInt32 temp_frame_cnt=0;
@@ -2176,18 +2207,29 @@ Bool  EncLink_doSkipFrame_Only30fps(EncLink_ChObj *pChObj, Int32 chId)
 		 pChObj->frame_mis=0;
 		pChObj->skip_flag = currTime;
 	 }
-	 if( 30000 == pChObj->algObj.algDynamicParams.targetFrameRate ){
+	 
+	 if( 30000 == pChObj->algObj.algDynamicParams.targetFrameRate){
 		std_fps = STD_FPS_30;
 	 }else{
-		 std_fps = 40;
+		 std_fps = STD_FPS_25;
 	 }
 	 pChObj->frame_cnt++;
-	timeout = (currTime - pChObj->start_time);
-	if( 40 == std_fps){
-		temp_frame_cnt = (timeout)/(std_fps);
-	}else{
-		temp_frame_cnt=(std_fps*timeout)/(100*1000);
+
+	 timeout = (currTime - pChObj->start_time);
+
+	if((pChObj->frame_cnt > FRAME_MAX_CNT) || (timeout > (FRAME_MAX_CNT*100*1000)/std_fps)){
+		UInt32 temp_fps2= ((pChObj->frame_mis+pChObj->frame_cnt)*1000*100)/(timeout);		
+		Vps_printf("------11chId=%d,Total Frame=%d, Time=%d, frame_mis=%d-,AveFps=%0.3f-----Infps=%d------\n",
+			chId,pChObj->frame_cnt,timeout,(pChObj->frame_mis),(float)(pChObj->frame_cnt*1000.0)/(Utils_getCurTimeInMsec()-pChObj->skip_flag),temp_fps2);
+		pChObj->frame_cnt = 0;
+		pChObj->start_time = currTime;
+		pChObj->frame_mis = 0;
+		pChObj->skip_flag=currTime;
+		timeout = 0;
 	}
+
+	temp_frame_cnt=(std_fps*timeout)/(100*1000);
+
 	if(  pChObj->frame_cnt  > (temp_frame_cnt+1 )){
 		pChObj->frame_mis++;
 		 pChObj->frame_cnt--;		 
@@ -2198,19 +2240,9 @@ Bool  EncLink_doSkipFrame_Only30fps(EncLink_ChObj *pChObj, Int32 chId)
 		return TRUE;
 	}
 	
-	if(pChObj->frame_cnt > FRAME_MAX_CNT){
-		UInt32 temp_fps2= ((pChObj->frame_mis+pChObj->frame_cnt)*1000*100)/(timeout);		
-		Vps_printf("------11chId=%d,Total Frame=%d, Time=%d, frame_mis=%d-,AveFps=%0.3f-----Infps=%d------\n",
-			chId,pChObj->frame_cnt,timeout,(pChObj->frame_mis),(float)(pChObj->frame_cnt*1000.0)/(Utils_getCurTimeInMsec()-pChObj->skip_flag),temp_fps2);
-		pChObj->frame_cnt = 0;
-		pChObj->start_time = currTime;
-		pChObj->frame_mis = 0;
-		pChObj->skip_flag=currTime;
-	}
-	
 
 	if(  (currTime -  pChObj->prev_time )>6000){
-		UInt32 temp_fps= (pChObj->frame_cnt*1000*100)/(timeout);
+//		UInt32 temp_fps= (pChObj->frame_cnt*1000*100)/(timeout);
 //		Vps_printf("------chId=%d,Total Frame=%d, Time=%d,-----frame_mis=%d->AveFPS=%d.......fps=%0.3f------\n",
 //			chId,pChObj->frame_cnt,timeout,pChObj->frame_mis,temp_fps,(float)(pChObj->frame_cnt*1000.0)/(Utils_getCurTimeInMsec()-pChObj->skip_flag));
 		 pChObj->prev_time = currTime;
@@ -2276,8 +2308,8 @@ static Bool EncLink_doSkipFrame_only25fps(EncLink_ChObj *pChObj, Int32 chId)
 #if 1
 Bool  EncLink_doSkipFrame(EncLink_ChObj *pChObj, Int32 chId)
 {
-	int i=0;
-	int keep_frame=0;
+//	int i=0;
+//	int keep_frame=0;
 	UInt32 currTime =  Utils_getCurTimeInMsec();
 	#if 0
 	if( chId == 3 || 2==  chId ){
@@ -2442,6 +2474,17 @@ static Int32 EncLink_codecDynamicResolutionChange(EncLink_Obj * pObj,
 		pFrameInfo->rtChInfo.pitch[0] = Reach_floor(pFrameInfo->rtChInfo.pitch[0],16);
 		
 		chDynamicParams = &pChObj->algObj.algDynamicParams;
+		if (pFrameInfo->rtChInfo.startX != chDynamicParams->startX)
+		{
+			chDynamicParams->startX = pFrameInfo->rtChInfo.startX;
+			rtParamUpdatePerFrame = TRUE;
+		}
+		if (pFrameInfo->rtChInfo.startY != chDynamicParams->startY)
+		{
+			chDynamicParams->startY = pFrameInfo->rtChInfo.startY;
+			rtParamUpdatePerFrame = TRUE;
+		}
+		
 		if (pFrameInfo->rtChInfo.height != chDynamicParams->inputHeight)
 		{
 			chDynamicParams->inputHeight = pFrameInfo->rtChInfo.height;

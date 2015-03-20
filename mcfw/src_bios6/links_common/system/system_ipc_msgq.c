@@ -408,6 +408,9 @@ Int32 System_ipcMsgQSendMsg(UInt32 linkId, UInt32 cmd, Void * pPrm,
 
     UTILS_assert(procId < SYSTEM_PROC_MAX);
 
+    /*wuzc modify for alloc fail!*/
+    Semaphore_pend(gSystem_ipcObj.msgQLock, BIOS_WAIT_FOREVER);
+
     pMsgCommon = (SystemIpcMsgQ_Msg *) MessageQ_alloc(SYSTEM_IPC_MSGQ_HEAP,
                                                       sizeof(*pMsgCommon) +
                                                       prmSize);
@@ -430,7 +433,7 @@ Int32 System_ipcMsgQSendMsg(UInt32 linkId, UInt32 cmd, Void * pPrm,
                            (MessageQ_Msg) pMsgCommon);
     MessageQ_setMsgId(pMsgCommon, linkId);
 
-    Semaphore_pend(gSystem_ipcObj.msgQLock, BIOS_WAIT_FOREVER);
+    //Semaphore_pend(gSystem_ipcObj.msgQLock, BIOS_WAIT_FOREVER);
 
     /* open message Q is not opened already */
     System_ipcMsgQOpen(procId);

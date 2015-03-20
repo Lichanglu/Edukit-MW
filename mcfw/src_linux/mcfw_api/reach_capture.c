@@ -17,16 +17,25 @@
 #include <device_adv7619.h>
 #include <device_gs2971.h>
 #include <device_gs2972.h>
+#include <device_adv7844.h>
+#include <device_adv7844_2.h>
 #include <mcfw/src_linux/devices/adv7441/src/adv7441_priv.h>
 #include <mcfw/src_linux/devices/adv7442/src/adv7442_priv.h>
 #include <mcfw/src_linux/devices/adv7619/src/adv7619_priv.h>
 #include <mcfw/src_linux/devices/gs2971/src/gs2971_priv.h>
 #include <mcfw/src_linux/devices/gs2972/src/gs2972_priv.h>
+#include <mcfw/src_linux/devices/adv7844/src/adv7844_priv.h>
+#include <mcfw/src_linux/devices/adv7844_2/src/adv7844_2_priv.h>
+#include <mcfw/src_linux/devices/gv7601/src/gv7601_priv.h>
 #include <adv7441.h>
 #include <adv7442.h>
 #include <adv7619.h>
 #include <gs2971.h>
 #include <gs2972.h>
+#include <mcfw/src_linux/devices/gv7601/inc/gv7601.h>
+#include <mcfw/src_linux/devices/gv7602/inc/gv7602.h>
+#include <mcfw/src_linux/devices/adv7844/inc/adv7844.h>
+#include <mcfw/src_linux/devices/adv7844_2/inc/adv7844_2.h>
 #include <assert.h>
 
 struct R_GPIO_data{
@@ -37,6 +46,7 @@ struct R_GPIO_data{
 int GPIOInit(int *fd)
 {
 	*fd = open("/dev/Rgpio",O_RDWR | O_SYNC);
+	return 0;
 }
 
 void GPIODeInit(int fd)
@@ -50,6 +60,7 @@ int SelectAD7441(int fd)
 	data.gpio_num = 39;
 	data.gpio_value = 0;
 	ioctl(fd, 0x55555555, &data);
+	return 0;
 }
 
 int SelectAD7442(int fd)
@@ -58,6 +69,7 @@ int SelectAD7442(int fd)
 	data.gpio_num = 40;
 	data.gpio_value = 0;
 	ioctl(fd, 0x55555555, &data);
+	return 0;
 }
 
 int SelectGS2971(int fd)
@@ -66,6 +78,7 @@ int SelectGS2971(int fd)
 	data.gpio_num = 39;
 	data.gpio_value = 1;
 	ioctl(fd, 0x55555555, &data);
+	return 0;	
 }
 
 int SelectGS2972(int fd)
@@ -74,7 +87,134 @@ int SelectGS2972(int fd)
 	data.gpio_num = 40;
 	data.gpio_value = 1;
 	ioctl(fd, 0x55555555, &data);
+	return 0;	
 }
+int SelectAD7844(int fd)
+{
+	struct R_GPIO_data  data;
+	data.gpio_num = 39;
+	data.gpio_value = 0;
+	ioctl(fd, 0x55555555, &data);
+	return 0;	
+}
+
+int SelectAD7844_2(int fd)
+{
+	struct R_GPIO_data  data;
+	data.gpio_num = 40;
+	data.gpio_value = 0;
+	ioctl(fd, 0x55555555, &data);
+	return 0;	
+}
+
+int GV7601Init(void)
+{
+	Int32 								status = 0;
+//	int 									gpio_fd;
+	int 									counts;
+//	struct R_GPIO_data 					data;
+	Device_VideoDecoderCreateParams		createArgs;
+	Device_VideoDecoderCreateStatus		createStatusArgs;
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+	Device_Gv7601Handle handle;
+
+	Device_gv7601Init();
+	memset(&createArgs, 0, sizeof(Device_VideoDecoderCreateParams));
+
+	createArgs.deviceI2cInstId	= 1;
+	createArgs.numDevicesAtPort	= 1;
+	createArgs.deviceI2cAddr[0] = 0;
+	createArgs.deviceResetGpio[0] = DEVICE_VIDEO_DECODER_GPIO_NONE;
+	handle = (Void *)Device_gv7601Create(0, 0, &(createArgs), &(createStatusArgs));
+	videoStatusArgs.channelNum = 0;
+	videoStatus.isVideoDetect = FALSE;
+	counts = 0;
+	while(1) {
+		counts++;
+		status = Device_gv7601Control(handle,
+										IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+										&videoStatusArgs, &videoStatus);
+		if(videoStatus.isVideoDetect > 0){
+			printf("Get Source For Input! ch0 videoStatus.frameWidth = %d, videoStatus.frameHeight=%d\n",videoStatus.frameWidth&0xFFFF,videoStatus.frameHeight&0xFFFF);
+			printf("Get Source For Input! ch1 videoStatus.frameWidth = %d, videoStatus.frameHeight=%d\n",(videoStatus.frameWidth>>16)&0xFFFF,(videoStatus.frameHeight>>16)&0xFFFF);
+			break;
+		}
+
+		sleep(1);
+		if(counts > 10){
+			printf("Get Source For Input Failed!\n");
+			status = -1;
+			break;
+		}
+	}
+
+	return status;
+}
+
+int GV7602Init(void)
+{
+	Int32 								status = 0;
+	int 									gpio_fd;
+	int 									counts;
+	struct R_GPIO_data 					data;
+	Device_VideoDecoderCreateParams		createArgs;
+	Device_VideoDecoderCreateStatus		createStatusArgs;
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+	Device_Gv7602Handle handle;
+	int byPassChannel;
+
+	gpio_fd = open("/dev/Rgpio",O_RDWR | O_SYNC);
+	data.gpio_num = 39;data.gpio_value = 0;
+	ioctl(gpio_fd, 0x55555555, &data);
+	data.gpio_num = 40;data.gpio_value = 0;
+	ioctl(gpio_fd, 0x55555555, &data);
+	printf("Set GPIO to Low!\n");
+	sleep(1);
+
+	Device_gv7602Init();
+	memset(&createArgs, 0, sizeof(Device_VideoDecoderCreateParams));
+
+	createArgs.deviceI2cInstId	= 1;
+	createArgs.numDevicesAtPort	= 1;
+	createArgs.deviceI2cAddr[0] = 0;
+	createArgs.deviceResetGpio[0] = DEVICE_VIDEO_DECODER_GPIO_NONE;
+	handle = (Void *)Device_gv7602Create(0, 0, &(createArgs), &(createStatusArgs));
+	videoStatusArgs.channelNum = 0;
+	videoStatus.isVideoDetect = FALSE;
+	counts = 0;
+
+	status = Device_gv7602Control(handle,
+									IOCTL_DEVICE_VIDEO_DECODER_RESET,
+									&byPassChannel, &videoStatus);
+	
+	byPassChannel = 1;
+	status = Device_gv7602Control(handle,
+									IOCTL_DEVICE_VIDEO_DECODER_SET_BYPASS_CH,
+									&byPassChannel, &videoStatus);
+	while(1) {
+		counts++;
+		status = Device_gv7602Control(handle,
+										IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+										&videoStatusArgs, &videoStatus);
+		if(videoStatus.isVideoDetect > 0){
+			printf("Get Source For Input! ch0 videoStatus.frameWidth = %d, videoStatus.frameHeight=%d\n",videoStatus.frameWidth&0xFFFF,videoStatus.frameHeight&0xFFFF);
+			printf("Get Source For Input! ch1 videoStatus.frameWidth = %d, videoStatus.frameHeight=%d\n",(videoStatus.frameWidth>>16)&0xFFFF,(videoStatus.frameHeight>>16)&0xFFFF);
+			break;
+		}
+
+		sleep(1);
+		if(counts > 10){
+			printf("Get Source For Input Failed!\n");
+			status = -1;
+			break;
+		}
+	}
+
+	return status;
+}
+
 #ifdef HAVE_CVBS
 int AD7619Init(void)
 {
@@ -326,6 +466,110 @@ int GS2972Init(void)
 	return status;
 }
 
+int AD7844Init(void)
+{
+	Int32 								status = 0;
+	int 									gpio_fd;
+	int 									counts;
+	struct R_GPIO_data 					data;
+	Device_VideoDecoderCreateParams		createArgs;
+	Device_VideoDecoderCreateStatus		createStatusArgs;
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+	Device_Adv7844Handle handle;
+
+	gpio_fd = open("/dev/Rgpio",O_RDWR | O_SYNC);
+	data.gpio_num = 39;data.gpio_value = 0;
+	ioctl(gpio_fd, 0x55555555, &data);
+	data.gpio_num = 40;data.gpio_value = 0;
+	ioctl(gpio_fd, 0x55555555, &data);
+	printf("Set GPIO to Low!\n");
+	sleep(1);
+//	close(gpio_fd);//不能被关闭
+
+	Device_adv7844Init();
+	memset(&createArgs, 0, sizeof(Device_VideoDecoderCreateParams));
+
+	createArgs.deviceI2cInstId	= 1;
+	createArgs.numDevicesAtPort	= 1;
+	createArgs.deviceI2cAddr[0] = 0;
+	createArgs.deviceResetGpio[0] = DEVICE_VIDEO_DECODER_GPIO_NONE;
+	handle = (Void *)Device_adv7844Create(0, 0, &(createArgs), &(createStatusArgs));
+	videoStatusArgs.channelNum = 0;
+	videoStatus.isVideoDetect = FALSE;
+	counts = 0;
+	while(1) {
+		counts++;
+		status = Device_adv7844Control(handle,
+										IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+										&videoStatusArgs, &videoStatus);
+		if(videoStatus.isVideoDetect == TRUE){
+			printf("Get Source For Input! videoStatus.frameWidth = %d, videoStatus.frameHeight=%d\n",videoStatus.frameWidth,videoStatus.frameHeight);
+			break;
+		}
+
+		sleep(1);
+		if(counts > 10){
+			printf("Get Source For Input Failed!\n");
+			status = -1;
+			break;
+		}
+	}
+
+	return status;
+}
+
+int AD7844_2Init(void)
+{
+	Int32 								status = 0;
+	int 									gpio_fd;
+	int 									counts;
+	struct R_GPIO_data 					data;
+	Device_VideoDecoderCreateParams		createArgs;
+	Device_VideoDecoderCreateStatus		createStatusArgs;
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+	Device_Adv7844_2Handle handle;
+
+	gpio_fd = open("/dev/Rgpio",O_RDWR | O_SYNC);
+	data.gpio_num = 39;data.gpio_value = 0;
+	ioctl(gpio_fd, 0x55555555, &data);
+	data.gpio_num = 40;data.gpio_value = 0;
+	ioctl(gpio_fd, 0x55555555, &data);
+//	close(gpio_fd);//不能被关闭
+	
+	Device_adv7844_2Init();
+	memset(&createArgs, 0, sizeof(Device_VideoDecoderCreateParams));
+
+	createArgs.deviceI2cInstId	= 1;
+	createArgs.numDevicesAtPort	= 1;
+	createArgs.deviceI2cAddr[0] = 0;
+	createArgs.deviceResetGpio[0] = DEVICE_VIDEO_DECODER_GPIO_NONE;
+	handle = (Void *)Device_adv7844_2Create(0, 0, &(createArgs), &(createStatusArgs));
+	videoStatusArgs.channelNum = 0;
+	videoStatus.isVideoDetect = FALSE;
+	counts = 0;
+	while(1) {
+		counts++;
+		status = Device_adv7844_2Control(handle,
+										IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+										&videoStatusArgs, &videoStatus);
+		if(videoStatus.isVideoDetect == TRUE){
+			printf("Get Source For Input! videoStatus.frameWidth = %d, videoStatus.frameHeight=%d\n",videoStatus.frameWidth,videoStatus.frameHeight);
+			break;
+		}
+
+		sleep(1);
+		if(counts > 10){
+			printf("Get Source For Input Failed!\n");
+			status = -1;
+			break;
+		}
+	}
+
+	return status;
+}
+
 void cap_init_create_param(CaptureLink_CreateParams *prm)
 {
 	return CaptureLink_CreateParams_Init(prm);
@@ -383,6 +627,21 @@ Int32 cap_config_videodecoder(Uint32 captureId)
 
 	return status;
 }
+
+Int32 cap_set_src_status(Uint32 captureId,VCAP_VIDEO_SOURCE_CH_STATUS_S *src_info)
+{
+	Int status = -1;
+
+	if((SYSTEM_LINK_ID_INVALID != captureId) && (NULL != src_info))
+	{
+		status = System_linkControl(captureId, CAPTURE_LINK_CMD_A8_DETECT_VIDEO,
+		                   src_info, sizeof(VCAP_VIDEO_SOURCE_CH_STATUS_S), TRUE);
+	}
+
+	return status;
+}
+
+
 
 Int32 cap_set_extra_frameschId(Uint32 captureId, UInt32 chId)
 {
@@ -731,6 +990,100 @@ Int32 cap_config_adv7619(Void **phandle, UInt8 instId,
 
 }
 
+Int32 cap_config_adv7844(Void **phandle, UInt8 instId,
+									VCAP_VIDEO_SOURCE_CH_STATUS_S *pVideoStatus)
+{	
+	Int32 status = 0;
+	Device_VideoDecoderCreateParams		createArgs;
+	Device_VideoDecoderCreateStatus		createStatusArgs;
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+
+	Device_Adv7844Handle *handle = (Device_Adv7844Handle *)phandle;
+
+	Device_adv7844Init();
+
+	memset(&createArgs, 0, sizeof(Device_VideoDecoderCreateParams));
+
+	createArgs.deviceI2cInstId	= 1;
+	createArgs.numDevicesAtPort	= 1;
+	createArgs.deviceI2cAddr[instId] = 0;
+	createArgs.deviceResetGpio[0] = DEVICE_VIDEO_DECODER_GPIO_NONE;
+
+	*handle = (Void *)Device_adv7844Create(0, instId, &(createArgs), &(createStatusArgs));
+	videoStatusArgs.channelNum = 0;
+
+	status = Device_adv7844Control(*handle,
+									IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+									&videoStatusArgs, &videoStatus);
+
+	if(pVideoStatus != NULL)
+		memcpy(pVideoStatus, &videoStatus, sizeof(VCAP_VIDEO_SOURCE_CH_STATUS_S));
+	if(videoStatus.isVideoDetect) {
+#if 0		
+        printf("\nCAPTURE: Detected video (%dx%d@%dHz, %d)!!!\n",
+                   videoStatus.frameWidth,
+                   videoStatus.frameHeight,
+                   1000000 / videoStatus.frameInterval,
+                   videoStatus.isInterlaced);
+
+        if(videoStatus.frameHeight == 288)
+            (*handle)->isPalMode = TRUE;
+#endif
+    }
+    else {
+        OSA_printf("\nCAPTURE ERROR: Could not detect video at adv7844 !!!\n");
+		return -1;
+    }
+
+	return 0;
+}
+
+Int32 cap_config_adv7844_2(Void **phandle, UInt8 instId,
+									VCAP_VIDEO_SOURCE_CH_STATUS_S *pVideoStatus)
+{	
+	Int32 status = 0;
+	Device_VideoDecoderCreateParams		createArgs;
+	Device_VideoDecoderCreateStatus		createStatusArgs;
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+	Device_Adv7844_2Handle *handle = (Device_Adv7844_2Handle *)phandle;
+
+	Device_adv7844_2Init();
+	memset(&createArgs, 0, sizeof(Device_VideoDecoderCreateParams));
+
+	createArgs.deviceI2cInstId	= 1;
+	createArgs.numDevicesAtPort	= 1;
+	createArgs.deviceI2cAddr[instId] = 0;
+	createArgs.deviceResetGpio[0] = DEVICE_VIDEO_DECODER_GPIO_NONE;
+
+	*handle = (Void *)Device_adv7844_2Create(0, instId, &createArgs, &createStatusArgs);
+	videoStatusArgs.channelNum = 0;
+	status = Device_adv7844_2Control(*handle,
+									IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+									&videoStatusArgs, &videoStatus);
+	if(pVideoStatus != NULL)
+		memcpy(pVideoStatus, &videoStatus, sizeof(VCAP_VIDEO_SOURCE_CH_STATUS_S));
+    if(videoStatus.isVideoDetect) {
+#if 0		
+        printf("\nCAPTURE: Detected video (%dx%d@%dHz, %d)!!!\n",
+                   videoStatus.frameWidth,
+                   videoStatus.frameHeight,
+                   1000000 / videoStatus.frameInterval,
+                   videoStatus.isInterlaced);
+
+        if(videoStatus.frameHeight == 288)
+            (*handle)->isPalMode = TRUE;
+#endif
+    }
+    else {
+        OSA_printf("\nCAPTURE ERROR: Could not detect video at adv7844_2!!!\n");
+		return -1;
+    }
+
+	return 0;
+}
+
 Int32 cap_get_7441_resolution(Void **phandle, VCAP_VIDEO_SOURCE_CH_STATUS_S *pvstatus)
 {
 	Int32 status = 0;
@@ -881,6 +1234,81 @@ Int32 cap_get_2972_resolution(Void **phandle, VCAP_VIDEO_SOURCE_CH_STATUS_S *pvs
 	return 0;
 }
 
+Int32 cap_get_7844_resolution(Void **phandle, VCAP_VIDEO_SOURCE_CH_STATUS_S *pvstatus)
+{
+	Int32 status = 0;
+
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+	
+	Device_Adv7844Handle *handle = (Device_Adv7844Handle *)phandle;
+
+	status = Device_adv7844Control(*handle,
+									IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+									&videoStatusArgs, &videoStatus);
+	pvstatus->isVideoDetect = videoStatus.isVideoDetect;
+    if(videoStatus.isVideoDetect) {
+#if 0
+        printf("\n adv7441 chip: detected video (%dx%d@%dHz, %d)!!!\n",
+                   videoStatus.frameWidth,
+                   videoStatus.frameHeight,
+                   0,
+                   videoStatus.isInterlaced);
+#endif
+		pvstatus->frameWidth = videoStatus.frameWidth;
+		pvstatus->frameHeight = videoStatus.frameHeight;
+		pvstatus->isInterlaced = videoStatus.isInterlaced;
+		
+
+        if(videoStatus.frameHeight == 288)
+            (*handle)->isPalMode = TRUE;
+
+    }
+    else {
+        OSA_printf("\n adv7844 chip: no video detected !\n");
+		return -1;
+    }
+
+	return 0;
+}
+
+Int32 cap_get_7844_2_resolution(Void **phandle, VCAP_VIDEO_SOURCE_CH_STATUS_S *pvstatus)
+{
+	Int32 status = 0;
+
+	VCAP_VIDEO_SOURCE_STATUS_PARAMS_S	videoStatusArgs;
+	VCAP_VIDEO_SOURCE_CH_STATUS_S		videoStatus;
+	
+	Device_Adv7844_2Handle *handle = (Device_Adv7844_2Handle *)phandle;
+
+	status = Device_adv7844_2Control(*handle,
+									IOCTL_DEVICE_VIDEO_DECODER_GET_VIDEO_STATUS,
+									&videoStatusArgs, &videoStatus);
+	pvstatus->isVideoDetect = videoStatus.isVideoDetect;
+    if(videoStatus.isVideoDetect) {
+#if 0
+        OSA_printf("\n adv7442 chip: detected video (%dx%d@%dHz, %d)!!!\n",
+                   videoStatus.frameWidth,
+                   videoStatus.frameHeight,
+                   0,
+                   videoStatus.isInterlaced);
+#endif
+		pvstatus->frameWidth = videoStatus.frameWidth;
+		pvstatus->frameHeight = videoStatus.frameHeight;
+		pvstatus->isInterlaced = videoStatus.isInterlaced;
+		
+        if(videoStatus.frameHeight == 288)
+            (*handle)->isPalMode = TRUE;
+    }
+    else {
+        OSA_printf("\n adv7844_2 chip: no video detected !\n");
+		return -1;
+    }
+
+	return 0;
+}
+
+
 Int32 Cap_SetSource7441Chan(Void **phandle, int chan)
 {
 	Device_Adv7441Handle *handle = (Device_Adv7441Handle *)phandle;
@@ -893,6 +1321,22 @@ Int32 Cap_SetSource7442Chan(Void **phandle, int chan)
 {
 	Device_Adv7442Handle *handle = (Device_Adv7442Handle *)phandle;
 	return Device_adv7442Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_SET_SOURCE_CHAN,
+		&chan, NULL);
+}
+
+Int32 Cap_SetSource7844Chan(Void **phandle, int chan)
+{
+	Device_Adv7844Handle *handle = (Device_Adv7844Handle *)phandle;
+	return Device_adv7844Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_SET_SOURCE_CHAN,
+		&chan, NULL);
+}
+
+Int32 Cap_SetSource7844_2Chan(Void **phandle, int chan)
+{
+	Device_Adv7844_2Handle *handle = (Device_Adv7844_2Handle *)phandle;
+	return Device_adv7844_2Control(*handle,
 		IOCTL_DEVICE_VIDEO_DECODER_SET_SOURCE_CHAN,
 		&chan, NULL);
 }
@@ -933,6 +1377,82 @@ Int32 cap_set_adv7442_HV(Void **phandle, int hv)
 		&hv, &hv);
 
 }
+Int32 cap_get_adv7844_HV(Void **phandle, int* hv)
+{
+	Device_Adv7844Handle *handle = (Device_Adv7844Handle *)phandle;
+	return Device_adv7844Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_GET_DIRECTION,
+		hv, NULL);
+
+}
+
+
+Int32 cap_set_adv7844_HV(Void **phandle, int hv)
+{
+	Device_Adv7844Handle *handle = (Device_Adv7844Handle *)phandle;
+	return Device_adv7844Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_SET_DIRECTION,
+		&hv, &hv);
+
+}
+
+Int32 cap_get_adv7844_2_HV(Void **phandle, int* hv)
+{
+	Device_Adv7844_2Handle *handle = (Device_Adv7844_2Handle *)phandle;
+	return Device_adv7844_2Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_GET_DIRECTION,
+		hv, NULL);
+
+}
+
+
+Int32 cap_set_adv7844_2_HV(Void **phandle, int hv)
+{
+	Device_Adv7844_2Handle *handle = (Device_Adv7844_2Handle *)phandle;
+	return Device_adv7844_2Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_SET_DIRECTION,
+		&hv, &hv);
+
+}
+
+Int32 cap_get_gs2971_HV(Void **phandle, int* hv)
+{
+	Device_Gs2971Handle *handle = (Device_Gs2971Handle *)phandle;
+	return Device_gs2971Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_GET_DIRECTION,
+		hv, NULL);
+
+}
+
+
+Int32 cap_set_gs2971_HV(Void **phandle, int hv)
+{
+	Device_Gs2971Handle *handle = (Device_Gs2971Handle *)phandle;
+	return Device_gs2971Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_SET_DIRECTION,
+		&hv, &hv);
+
+}
+
+Int32 cap_get_gs2972_HV(Void **phandle, int* hv)
+{
+	Device_Gs2972Handle *handle = (Device_Gs2972Handle *)phandle;
+	return Device_gs2972Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_GET_DIRECTION,
+		hv, NULL);
+
+}
+
+
+Int32 cap_set_gs2972_HV(Void **phandle, int hv)
+{
+	Device_Gs2972Handle *handle = (Device_Gs2972Handle *)phandle;
+	return Device_gs2972Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_SET_DIRECTION,
+		&hv, &hv);
+
+}
+
 Int32 cap_invert_cbcr_adv7441_HV(Void **phandle, int hv)
 {
 	Device_Adv7441Handle *handle = (Device_Adv7441Handle *)phandle;
@@ -949,3 +1469,21 @@ Int32 cap_invert_cbcr_adv7442_HV(Void **phandle, int hv)
 		&hv, &hv);
 
 }
+
+Int32 cap_invert_cbcr_adv7844_HV(Void **phandle, int hv)
+{
+	Device_Adv7844Handle *handle = (Device_Adv7844Handle *)phandle;
+	return Device_adv7844Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_INVERT_CBCR,
+		&hv, &hv);
+
+}
+Int32 cap_invert_cbcr_adv7844_2_HV(Void **phandle, int hv)
+{
+	Device_Adv7844_2Handle *handle = (Device_Adv7844_2Handle *)phandle;
+	return Device_adv7844_2Control(*handle,
+		IOCTL_DEVICE_VIDEO_DECODER_INVERT_CBCR,
+		&hv, &hv);
+
+}
+

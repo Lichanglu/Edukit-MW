@@ -18,7 +18,7 @@ typedef struct _dup_struct_ {
 
 Void dup_init_create_param(DupLink_CreateParams *prm);
 
-
+Int32 dup_set_chInfo(Uint32 dupLinkId, System_dupChInfo *prm);
 
 #endif
 

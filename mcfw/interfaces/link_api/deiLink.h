@@ -79,6 +79,8 @@
 
 #define DEI_LINK_CMD_CHANGE_CH_FID_FLAG		 (0x3009)
 
+#define  DEI_LINK_CMD_SET_INCHAN_INFO		 (0x300a)
+
 
 /**
     \brief Dei link scale mode
@@ -227,6 +229,12 @@ typedef struct DeiLink_ChFlushParams
 	/**< Dei channel number */
 	
 } DeiLink_ChFlushParams;
+
+typedef struct
+{
+	UInt32 chid;
+	System_LinkChInfo chinfo;
+}DeiLink_InChInfo;
 
 /**
     \brief Dei link register and init

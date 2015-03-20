@@ -79,6 +79,9 @@ UInt32 Avsync_vidQueGetMasterSynchChannel(UInt32  syncLinkID);
 Int Avsync_vidQueFlush(AvsyncLink_VidQueObj *queObj,
                        FVID2_Frame **framePtr,
                        FVID2_FrameList *freeFrameList);
+Int Avsync_vidQueFlush_lichl_skip(AvsyncLink_VidQueObj *queObj,
+                       FVID2_Frame **framePtr,
+                       FVID2_FrameList *freeFrameList);
 Void Avsync_vidSynchCallbackFxn(UInt32 displayID);
 UInt32 Avsync_mapDisplayLinkID2Index(UInt32 linkID);
 Void AvsyncLink_logCaptureTS(UInt32 chNum, UInt64 ts);

@@ -2,7 +2,7 @@
 #include "reach_display_priv.h"
 
 #include <mcfw/interfaces/link_api/displayLink.h>
-
+#include <mcfw/interfaces/ti_vdis_timings.h>
 #include <device_ad9889.h>
 #include <mcfw/src_linux/devices/ad9889/src/ad9889_priv.h>
 #include <ad9889.h>
@@ -182,11 +182,208 @@ Int32 dis_stop_drv(Uint32 displayId)
     return status;
 }
 
+Int32 getoutfps(UInt32 outRes, UInt32 *outFps)
+{
+	switch (outRes)
+	{
+		case VSYS_STD_3840x2400_60:
+			*outFps = 60;
+			break;
+			
+		case VSYS_STD_3840x1200_60:
+			*outFps = 60;
+			break;
+		case VSYS_STD_SXGAP_60:
+			*outFps = 60;
+			break;
+			
+        case VSYS_STD_1440_900_60:
+               *outFps = 60;
+               break;	
+			   
+		case VSYS_STD_1920x1200_60:
+			*outFps = 60;
+			break;
+			
+		case VSYS_STD_SXGA_60:
+			*outFps = 60;
+			break;
+		case VSYS_STD_1280x800_60:
+			*outFps = 60;
+			break;
+		case VSYS_STD_720P_60:
+			*outFps = 60;
+			break;
+		case VSYS_STD_720P_50:
+			*outFps = 50;
+			break;
+		case VSYS_STD_XGA_60:
+			*outFps = 60;
+			break;
+		case VSYS_STD_1080I_60:
+		case VSYS_STD_1080P_30:
+			*outFps = 30;
+			break;
+		case VSYS_STD_1080P_60:
+			*outFps = 60;
+			break;
+		case VSYS_STD_1080P_50:
+			*outFps = 50;
+			break;
+		case VSYS_STD_NTSC:
+			*outFps = 30;
+			break;
+			
+		case VSYS_STD_PAL:
+			*outFps = 30;
+			break;
+		default:
+			*outFps = 0;
+			break;
+				
+	}
+	return 0;
+}
+
+static char gBuff[1024] = {0};
+/*设置dis的输出设置*/
+static Int32 dis_set_system_resolution(UInt32 displayId, UInt32 resolution)
+{
+    printf("-----------dis_set_system_resolution-------------------\n");
+	if(displayId == SYSTEM_LINK_ID_DISPLAY_0)  
+	{
+		VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 0, 3)     
+		VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 0, 0) 
+		VDIS_CMD_ARG2(gBuff, VDIS_CLKSRC_SETVENC,"dclk",3)      //Arun    
+		switch(resolution) 
+		{                    
+		    case VSYS_STD_1080P_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_60, 3)                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_60, 0)                    
+		        break;                   
+		    case VSYS_STD_1080P_50:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_50, 3)     
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_50, 0)                 
+		        break;     
+		    case VSYS_STD_1080P_30:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_30, 3)     
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_30, 0)                 
+		        break;     
+		    case VSYS_STD_720P_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_60, 3)                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_60, 0)                    
+		        break;  
+		    case VSYS_STD_720P_50:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_50, 3)                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_50, 0)                    
+		        break;  
+		    case VSYS_STD_XGA_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_XGA_60, 3)                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_XGA_60, 0)                    
+		        break;                    
+		    case VSYS_STD_SXGA_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_SXGA_60, 3)                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_SXGA_60, 0)                    
+		        break;                    
+		    default:                        
+		        printf("\n Resolution not supported for this HDMI|HDCOMP!! \n");                    
+		        break;                
+		}                
+		/* Tie HDMI and HDCOMP from A8 side */               
+		VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_TIEDVENCS, VDIS_VENC_HDCOMP | VDIS_VENC_HDMI)     
+		VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 1, 3)     
+		VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 1, 0)
+	}
+	else
+	{
+		VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 0, 1)     
+		VDIS_CMD_ARG2(gBuff, VDIS_CLKSRC_SETVENC,"dclk",1)      //Arun    
+		switch(resolution) 
+		{                    
+		    case VSYS_STD_1080P_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_60, 1)                                        
+		        break;                   
+		    case VSYS_STD_1080P_50:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_50, 1)                      
+		        break;     
+		    case VSYS_STD_1080P_30:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_30, 1)                   
+		        break;     
+		    case VSYS_STD_720P_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_60, 1)                                        
+		        break;   
+		    case VSYS_STD_720P_50:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_50, 1)                                        
+		        break; 
+		    case VSYS_STD_XGA_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_XGA_60, 1)                                       
+		        break;                    
+		    case VSYS_STD_SXGA_60:                        
+		        VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_SXGA_60, 1)                                        
+		        break;                    
+		    default:                        
+		        printf("\n Resolution not supported for this HDMI|HDCOMP!! \n");                    
+		        break;                
+		}                               
+		//VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_TIEDVENCS, VDIS_VENC_DVO2)     
+		VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 1, 1)     
+	}
+
+    printf("-----------dis_set_system_resolution end-------------------\n");
+	return 0;
+}
+
+/*设置dis的输出制式*/
+Int32 test_dis_set_system_resolution(UInt32 displayId, UInt32 resolution)
+{
+    printf("-----------dis_set_system_resolution-------------------\n");
+    
+    VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 0, 3)
+    VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 0, 0)                
+    VDIS_CMD_ARG2(gBuff, VDIS_CLKSRC_SETVENC,"dclk",3)      //Arun 
+
+    switch(resolution) 
+    {                    
+        case VSYS_STD_1080P_60:                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_60, 3)                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_60, 0)                    
+            break;                   
+        case VSYS_STD_1080P_50:                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_50, 3)     
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_1080P_50, 0)                 
+            break;                    
+        case VSYS_STD_720P_60:                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_60, 3)                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_720P_60, 0)                    
+            break;                    
+        case VSYS_STD_XGA_60:                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_XGA_60, 3)                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_XGA_60, 0)                    
+            break;                    
+        case VSYS_STD_SXGA_60:                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_SXGA_60, 3)                        
+            VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_SXGA_60, 0)                    
+            break;                    
+        default:                        
+            printf("\n Resolution not supported for this HDMI|HDCOMP!! \n");                    
+            break;                
+    } 
+
+    /* Tie HDMI and HDCOMP from A8 side */               
+    VDIS_CMD_ARG1(gBuff, VDIS_TIMINGS_TIEDVENCS, VDIS_VENC_HDCOMP | VDIS_VENC_HDMI)                
+    VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 1, 3)                
+    VDIS_CMD_ARG2(gBuff, VDIS_TIMINGS_SETVENC, 1, 0)
+    printf("-----------dis_set_system_resolution end-------------------\n");
+	return 0;
+}
+
 Int32 dis_set_resolution(UInt32 displayId, UInt32 resolution)
 {
 	Int32 status = -1;
 	DisplayLink_RtParams params;
-	
+
+	dis_set_system_resolution(displayId,resolution);
+
 	params.resolution = resolution;
 
 	if(displayId != SYSTEM_LINK_ID_INVALID) {
@@ -240,10 +437,10 @@ Void dis_params_init(VDIS_PARAMS_S * pContext)
 		pContext->mosaicParams[i].userSetDefaultSWMLayout = TRUE;
 	}
 
-	pContext->tiedDevicesMask = VDIS_VENC_HDMI | VDIS_VENC_DVO2;
-	pContext->enableConfigExtVideoEncoder = TRUE;
+	pContext->tiedDevicesMask = VDIS_VENC_HDMI  ;
+	pContext->enableConfigExtVideoEncoder = FALSE;
 
-	pContext->deviceParams[VDIS_DEV_DVO2].enable = TRUE;
+	pContext->deviceParams[VDIS_DEV_DVO2].enable = FALSE;
 	pContext->deviceParams[VDIS_DEV_DVO2].outputInfo.vencNodeNum = VDIS_VENC_DVO2;
 	pContext->deviceParams[VDIS_DEV_DVO2].outputInfo.aFmt = VDIS_A_OUTPUT_COMPOSITE;
 	pContext->deviceParams[VDIS_DEV_DVO2].outputInfo.dvoFidPolarity = VDIS_POLARITY_ACT_HIGH;
@@ -259,18 +456,18 @@ Void dis_params_init(VDIS_PARAMS_S * pContext)
 	pContext->deviceParams[VDIS_DEV_HDMI].outputInfo.dvoFmt = VDIS_DVOFMT_TRIPLECHAN_EMBSYNC;//VDIS_DVOFMT_TRIPLECHAN_DISCSYNC;
 	pContext->deviceParams[VDIS_DEV_HDMI].outputInfo.dataFormat = SYSTEM_DF_RGB24_888;
 
-	pContext->deviceParams[VDIS_DEV_SD].enable = TRUE;
+	pContext->deviceParams[VDIS_DEV_SD].enable = FALSE;
 	pContext->deviceParams[VDIS_DEV_SD].outputInfo.vencNodeNum = VDIS_VENC_SD;
 	pContext->deviceParams[VDIS_DEV_SD].outputInfo.aFmt = VDIS_A_OUTPUT_COMPOSITE;
 	pContext->deviceParams[VDIS_DEV_SD].outputInfo.dvoFmt = VDIS_DVOFMT_TRIPLECHAN_DISCSYNC;
 	pContext->deviceParams[VDIS_DEV_SD].outputInfo.dataFormat = SYSTEM_DF_RGB24_888;
 
-	pContext->deviceParams[VDIS_DEV_HDCOMP].enable = TRUE;
+	pContext->deviceParams[VDIS_DEV_HDCOMP].enable = FALSE;
 	pContext->deviceParams[VDIS_DEV_HDCOMP].outputInfo.vencNodeNum = VDIS_VENC_HDCOMP;
 	pContext->deviceParams[VDIS_DEV_HDCOMP].outputInfo.aFmt = VDIS_A_OUTPUT_COMPONENT;
 	pContext->deviceParams[VDIS_DEV_HDCOMP].outputInfo.dvoFmt = VDIS_DVOFMT_TRIPLECHAN_DISCSYNC;//VDIS_DVOFMT_TRIPLECHAN_EMBSYNC;
 	pContext->deviceParams[VDIS_DEV_HDCOMP].outputInfo.dataFormat = SYSTEM_DF_RGB24_888;//SYSTEM_DF_YUV444P;
-	pContext->tiedDevicesMask = VDIS_VENC_HDCOMP | VDIS_VENC_DVO2;
+	pContext->tiedDevicesMask = VDIS_VENC_HDCOMP | VDIS_VENC_HDMI;//VDIS_VENC_DVO2;
 	pContext->enableEdgeEnhancement = TRUE;
 
 	pContext->deviceParams[SYSTEM_DC_VENC_HDMI].colorSpaceMode = VDIS_CSC_MODE_SDTV_GRAPHICS_Y2R;

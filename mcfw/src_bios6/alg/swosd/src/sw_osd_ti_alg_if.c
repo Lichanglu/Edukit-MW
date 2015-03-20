@@ -32,7 +32,7 @@ Int32 SWOSD_open(SWOSD_Obj * pObj, SWOSD_OpenPrm *openPrm)
         || openPrm->maxWidth  > SWOSD_MAX_WIDTH
         || openPrm->maxHeight > 1080
         ) {
-        return NULL;
+        return SWOSD_EFAIL;
     }
 
     memset(pObj, 0, sizeof(SWOSD_Obj));

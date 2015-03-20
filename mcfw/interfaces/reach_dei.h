@@ -32,6 +32,6 @@ Int32 dei_print_statics(Uint32 deiId);
 
 Int32 dei_print_buffer_statics(Uint32 deiId);
 
-
+Int32 dei_set_inchinfo(Uint32 deiId, DeiLink_InChInfo *params);
 
 #endif

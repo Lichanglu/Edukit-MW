@@ -45,7 +45,9 @@ static inline int VDIS_Sysfs_Read(char *filename, char *buf, int length)
 
 #define VDIS_TIMINGS_1080P_60 "echo 148500,1920/88/148/44,1080/4/36/5,1  > /sys/devices/platform/vpss/display%d/timings"
 #define VDIS_TIMINGS_1080P_50 "echo 148500,1920/528/148/44,1080/4/36/5,1  > /sys/devices/platform/vpss/display%d/timings"
+#define VDIS_TIMINGS_1080P_30 "echo 74250,1920/88/148/44,1080/4/36/5,1  > /sys/devices/platform/vpss/display%d/timings"
 #define VDIS_TIMINGS_720P_60  "echo 74250,1280/110/220/40,720/5/20/5,1   > /sys/devices/platform/vpss/display%d/timings"
+#define VDIS_TIMINGS_720P_50  "echo 74250,1280/440/220/40,720/5/20/5,1   > /sys/devices/platform/vpss/display%d/timings"
 #define VDIS_TIMINGS_XGA_60   "echo 65000,1024/24/160/136,768/3/29/6,1   > /sys/devices/platform/vpss/display%d/timings"
 #define VDIS_TIMINGS_SXGA_60  "echo 108000,1280/48/248/112,1024/1/38/3,1 > /sys/devices/platform/vpss/display%d/timings"
 

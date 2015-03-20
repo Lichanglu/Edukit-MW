@@ -17,12 +17,22 @@ Int32 System_linkControl_local(UInt32 linkId, UInt32 cmd, Void *pPrm, UInt32 prm
 
     UTILS_assert(  linkId < SYSTEM_LINK_ID_MAX);
 
+    if (waitAck)
+    {
+        OSA_mutexLock(&gSystem_objCommon.linkControlMutex);
+    }
+
     pToMbx = &gSystem_objCommon.linkObj[linkId].pTsk->mbxHndl;
 
     if(waitAck)
         flags = OSA_MBX_WAIT_ACK;
 
     status = OSA_mbxSendMsg(pToMbx,&gSystem_objCommon.mbx,  cmd, pPrm, flags);
+	
+    if (waitAck)
+    {
+        OSA_mutexUnlock(&gSystem_objCommon.linkControlMutex);
+    }
 
     return status;
 }

@@ -181,6 +181,14 @@ Int32 getoutsize(UInt32 outRes, UInt32 * width, UInt32 * height)
 {
 	switch (outRes)
 	{
+		case VSYS_STD_1920x2160_30:
+			*width = 1920;
+			*height = 2160;
+			break;
+		case VSYS_STD_3840x1080_30:
+			*width = 3840;
+			*height = 1080;
+			break;
 		case VSYS_STD_3840x2400_60:
 			*width = 3840;
 			*height = 2400;
@@ -214,6 +222,7 @@ Int32 getoutsize(UInt32 outRes, UInt32 * width, UInt32 * height)
 			*height = 800;
 			break;
 		case VSYS_STD_720P_60:
+		case VSYS_STD_720P_50:
 			*width = 1280;
 			*height = 720;
 			break;
@@ -221,10 +230,10 @@ Int32 getoutsize(UInt32 outRes, UInt32 * width, UInt32 * height)
 			*width = 1024;
 			*height = 768;
 			break;
-		default
-				:
+		default:
 		case VSYS_STD_1080I_60:
 		case VSYS_STD_1080P_60:
+		case VSYS_STD_1080P_50:
 		case VSYS_STD_1080P_30:
 			*width = 1920;
 			*height = 1080;
@@ -623,5 +632,39 @@ Int32 swMsSwitchLayout(UInt32 swMsLinkId, SwMsLink_CreateParams *swMsPrm, UInt32
 
 	
 	return OSA_SOK;
+}
+
+Int32 swMsSetInChInfo(UInt32 swMsLinkId, SwMsLink_InChInfo *Prm)
+{	
+	Int32 status = -1;
+
+	if(swMsLinkId != SYSTEM_LINK_ID_INVALID) {
+		status = System_linkControl(swMsLinkId,
+								SYSTEM_SW_MS_LINK_CMD_SET_INCHAN_INFO,
+								Prm,
+								sizeof(*Prm),
+								TRUE
+								);
+
+	}
+
+	return status;
+}
+
+Int32 swMsSetAutoGetInChInfo(UInt32 swMsLinkId, Int32 chId)
+{	
+	Int32 status = -1;
+
+	if(swMsLinkId != SYSTEM_LINK_ID_INVALID) {
+		status = System_linkControl(swMsLinkId,
+								SYSTEM_SW_MS_LINK_CMD_AUTO_GET_INCHAN_INFO,
+								&chId,
+								sizeof(chId),
+								TRUE
+								);
+
+	}
+
+	return status;
 }
 

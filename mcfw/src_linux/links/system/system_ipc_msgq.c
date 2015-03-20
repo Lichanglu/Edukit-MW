@@ -353,7 +353,8 @@ Int32 System_ipcMsgQSendMsg(UInt32 linkId, UInt32 cmd, Void *pPrm, UInt32 prmSiz
     #endif
 
     UTILS_assert(  procId < SYSTEM_PROC_MAX);
-
+    /*wuzc modify for malloc fail*/
+    OSA_mutexLock(&gSystem_ipcObj.msgQLock);
     pMsgCommon = (SystemIpcMsgQ_Msg *)MessageQ_alloc(
                     SYSTEM_IPC_MSGQ_HEAP,
                     sizeof(*pMsgCommon)+prmSize
@@ -376,7 +377,7 @@ Int32 System_ipcMsgQSendMsg(UInt32 linkId, UInt32 cmd, Void *pPrm, UInt32 prmSiz
     MessageQ_setReplyQueue(gSystem_ipcObj.selfAckMsgQ, (MessageQ_Msg)pMsgCommon);
     MessageQ_setMsgId(pMsgCommon, linkId);
 
-    OSA_mutexLock(&gSystem_ipcObj.msgQLock);
+    //OSA_mutexLock(&gSystem_ipcObj.msgQLock);
 
     status = MessageQ_put(gSystem_ipcObj.remoteProcMsgQ[procId], (MessageQ_Msg)pMsgCommon);
     if(status!=MessageQ_S_SUCCESS)

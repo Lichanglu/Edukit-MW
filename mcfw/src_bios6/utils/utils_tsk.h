@@ -191,7 +191,7 @@ Int32 Reach_tskCreate(Utils_TskHndl * pHndl,
                       UInt8 * stackAddr,
                       UInt32 stackSize, Ptr appData, char *tskName);
 
-
+Int32 Reach_Utils_tskDelete(Utils_TskHndl * pHndl);
 #endif
 
 /* @} */

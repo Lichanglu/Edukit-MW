@@ -10,6 +10,7 @@
 #include <mcfw/interfaces/link_api/algLink.h>
 #include <mcfw/interfaces/link_api/ipcLink.h>
 #include <mcfw/src_bios6/links_c6xdsp/utils/utils_dsp.h>
+#include "algLink_priv.h"
 #ifdef  DSP_RPE_AUDIO_ENABLE
 #include "ti/rpe.h"
 #endif
@@ -74,6 +75,21 @@ Int32 System_deInit()
     return FVID2_SOK;
 }
 
+extern UInt32 gAlgLinkRunCount[ALG_LINK_OBJ_MAX];
+static void SystemHeartTskMain(UArg arg0, UArg arg1)
+{
+	UInt8 objId = 0;
+	while(1)
+	{
+		/*10s打印一次各个任务是运行状态*/
+		Task_sleep(10000);
+		
+		Vps_printf("----------tsk-run---------\n");
+		for(objId = 0; objId < ALG_LINK_OBJ_MAX; objId++)
+			Vps_printf("=========AlgLink-objId:%d:RunCount:%d\n",objId,gAlgLinkRunCount[objId]);
+	}
+}
+
 Void System_initLinks()
 {
     Vps_printf(" %d: SYSTEM  : Initializing Links !!! \r\n", Clock_getTicks());
@@ -84,6 +100,10 @@ Void System_initLinks()
     MergeLink_init();
     SelectLink_init();
 
+    Task_Handle tsk;
+    tsk = Task_create(SystemHeartTskMain, NULL, NULL);
+    UTILS_assert(tsk != NULL);
+	
     Vps_printf(" %d: SYSTEM  : Initializing Links ... DONE !!! \r\n",
                Clock_getTicks());
 }

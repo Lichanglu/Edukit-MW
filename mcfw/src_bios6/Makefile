@@ -1,7 +1,6 @@
 
 MODULE_NAME = dvr_rdk_bios6
 
-
 INCDIR = .  $(jpegenc_PATH)/inc $(jpegdec_PATH)/inc  $(h264enc_PATH)/packages/ti/sdo/codecs/h264enc/ $(h264dec_PATH)/packages/ti/sdo/codecs/h264dec/ $(rpe_INCLUDE) $(rpei_INCLUDE)
 
 # List all the external components/interfaces, whose interface header files

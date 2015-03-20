@@ -35,6 +35,7 @@ Int32 DupLink_drvCreate(DupLink_Obj * pObj, DupLink_CreateParams * pPrm)
 
     memset(pObj->frames, 0, sizeof(pObj->frames));
     memset(pObj->frameInfo, 0, sizeof(pObj->frameInfo));
+    memset(pObj->dupChUpdateInfo,0,sizeof(pObj->dupChUpdateInfo));
 
     status = System_linkGetInfo(pPrm->inQueParams.prevLinkId, &pObj->inTskInfo);
     UTILS_assert(status == FVID2_SOK);
@@ -123,18 +124,22 @@ Int32 DupLink_getFullFrames(Utils_TskHndl * pTsk, UInt16 queId,
     UTILS_assert(queId < DUP_LINK_MAX_OUT_QUE);
     UTILS_assert(queId < pObj->createArgs.numOutQue);
 
+    Semaphore_pend(pObj->lock, BIOS_WAIT_FOREVER);
+	
     status = Utils_bufGetFull(&pObj->outFrameQue[queId], pFrameList,
                               BIOS_NO_WAIT);
     if (status == 0)
     {
         pObj->stats.forwardCount[queId]+= pFrameList->numFrames;
     }
+    Semaphore_post(pObj->lock);
     return status;
 }
 
 Int32 DupLink_drvProcessFrames(DupLink_Obj * pObj)
 {
     UInt32 frameId, outId;
+    UInt32 inChid = 0;
     FVID2_Frame *pFrame, *pOrgFrame;
     System_FrameInfo *pFrameInfo, *pOrgFrameInfo;
     Int32 status;
@@ -142,6 +147,7 @@ Int32 DupLink_drvProcessFrames(DupLink_Obj * pObj)
 
     pCreateArgs = &pObj->createArgs;
 
+    pObj->inFrameList.numFrames = 0;
     System_getLinksFullFrames(pCreateArgs->inQueParams.prevLinkId,
                               pCreateArgs->inQueParams.prevLinkQueId,
                               &pObj->inFrameList);
@@ -167,6 +173,9 @@ Int32 DupLink_drvProcessFrames(DupLink_Obj * pObj)
 
             pOrgFrameInfo->dupCount = pCreateArgs->numOutQue;
 
+	     UTILS_assert(pOrgFrame->channelNum < SYSTEM_MAX_CH_PER_OUT_QUE);
+	     inChid = pOrgFrame->channelNum;
+
             for (outId = 0; outId < pCreateArgs->numOutQue; outId++)
             {
                 status = Utils_bufGetEmptyFrame(&pObj->outFrameQue[outId],
@@ -179,6 +188,17 @@ Int32 DupLink_drvProcessFrames(DupLink_Obj * pObj)
 
                 memcpy(pFrame, pOrgFrame, sizeof(*pOrgFrame));
                 memcpy(pFrameInfo, pOrgFrameInfo, sizeof(*pOrgFrameInfo));
+
+		  if(pObj->dupChUpdateInfo[inChid].chRtOutInfoUpdate)
+	  	  {
+	  	  	pFrameInfo->rtChInfoUpdate = TRUE;
+			pFrameInfo->rtChInfo.startX = pObj->dupChUpdateInfo[inChid].chinfo.startX;
+			pFrameInfo->rtChInfo.startY = pObj->dupChUpdateInfo[inChid].chinfo.startY;
+			pFrameInfo->rtChInfo.width = pObj->dupChUpdateInfo[inChid].chinfo.width;
+			pFrameInfo->rtChInfo.height = pObj->dupChUpdateInfo[inChid].chinfo.height;
+			pFrameInfo->rtChInfo.pitch[0]= pObj->dupChUpdateInfo[inChid].chinfo.pitch[0];
+			pFrameInfo->rtChInfo.pitch[1] = pObj->dupChUpdateInfo[inChid].chinfo.pitch[1];
+	  	  }
 
                 pFrame->appData = pFrameInfo;
 
@@ -257,11 +277,10 @@ Int32 DupLink_putEmptyFrames(Utils_TskHndl * pTsk, UInt16 queId,
                                pObj->createArgs.inQueParams.prevLinkQueId,
                                &freeFrameList);
 
-    Semaphore_post(pObj->lock);
-
     status = Utils_bufPutEmpty(&pObj->outFrameQue[queId], pFrameList);
     UTILS_assert(status == FVID2_SOK);
-
+	
+    Semaphore_post(pObj->lock);
     return FVID2_SOK;
 }
 
@@ -306,6 +325,17 @@ Void DupLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
                 Utils_tskAckOrFreeMsg(pMsg, status);
 
                 DupLink_drvProcessFrames(pObj);
+                break;
+            case DUP_LINK_CMD_SET_INCHAN_INFO:
+		{
+			System_dupChInfo *params;
+			params = (System_dupChInfo *) Utils_msgGetPrm(pMsg);
+
+			if(NULL != params)
+				DupLink_SetInChInfo(pObj,params);
+
+			Utils_tskAckOrFreeMsg(pMsg, status);
+		}
                 break;
             default:
                 Utils_tskAckOrFreeMsg(pMsg, status);
@@ -367,4 +397,34 @@ Int32 DupLink_deInit()
         Utils_tskDelete(&gDupLink_obj[dupId].tsk);
     }
     return FVID2_SOK;
+}
+
+Int32 DupLink_SetInChInfo(DupLink_Obj * pObj, System_dupChInfo *pchinchfo)
+{
+	System_LinkChInfo *rtChInfo;
+	UInt32 inChid = 0;
+
+	UTILS_assert(pchinchfo->chid < SYSTEM_MAX_CH_PER_OUT_QUE);
+
+	inChid = pchinchfo->chid;
+
+	pObj->dupChUpdateInfo[inChid].chRtOutInfoUpdate = TRUE;
+	rtChInfo = &pObj->dupChUpdateInfo[inChid].chinfo;
+	rtChInfo->startX = pchinchfo->chinfo.startX;
+	rtChInfo->startY = pchinchfo->chinfo.startY;
+	rtChInfo->width = pchinchfo->chinfo.width;
+	rtChInfo->height = pchinchfo->chinfo.height;
+	rtChInfo->pitch[0]= pchinchfo->chinfo.pitch[0];
+	rtChInfo->pitch[1] = pchinchfo->chinfo.pitch[1];
+	Vps_printf("[DupLink_SetInChInfo] chid:[%d] chRtInInfoUpdate:%d,x:%d,y:%d,w:%d,h:%d,pitch[0]:%d,pitch[1]:%d\n",
+				inChid,
+				pObj->dupChUpdateInfo[inChid].chRtOutInfoUpdate,
+				rtChInfo->startX,
+				rtChInfo->startY,
+				rtChInfo->width,
+				rtChInfo->height,
+				rtChInfo->pitch[0],
+				rtChInfo->pitch[1]);
+
+	return FVID2_SOK;
 }

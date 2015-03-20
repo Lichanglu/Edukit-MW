@@ -133,6 +133,20 @@
 #define ADV7441_USER_MAP3_ADDR				(0x24)
 #define ADV7441_HDMI_MAP_ADDR				(0x34)
 #define ADV7441_KSV_MAP_ADDR					(0x32)
+
+#define ADV7844_I2C_INST_ID					(0x01)
+#define ADV7844_IO_MAP_ADDR					(0x20)
+#define ADV7844_CP_MAP_ADDR					(0x22)
+#define ADV7844_HDMI_MAP_ADDR				(0x34)
+#define ADV7844_SDP_MAP_ADDR					(0x48)
+#define ADV7844_SDP_IO_MAP_ADDR				(0x4a)
+#define ADV7844_AVLINK_MAP_ADDR				(0x42)
+#define ADV7844_AFE_MAP_ADDR					(0x26)
+
+#define ADV7511_IIC_SLAVE_ADDR						(0x39)
+#define ADV7511_IIC_EDID_MAP_ADDR					(0x3F)
+#define ADV7511_IIC_PACKET_MEM_MAP_ADDR				(0x38)
+#define ADV7511_IIC_CEC_MAP_ADDR						(0x3C)
 #else
 #define ADV7441_I2C_INST_ID					(0x01)
 #define ADV7441_USER_MAP_ADDR				(0x21)
@@ -150,10 +164,15 @@
 #define ADV7442_HDMI_MAP_ADDR				(0x34)
 #define ADV7442_KSV_MAP_ADDR					(0x32)
 #endif
-#define GS2971_IIC_SLAVE_ADDR					(0xFF)
+#define CPLD_IIC_SLAVE_ADDR						(0x3C)
 
-#define GS2972_IIC_SLAVE_ADDR					(0xFF)
+#define GS2971_IIC_SLAVE_ADDR					(0x3C)
 
+#define GS2972_IIC_SLAVE_ADDR					(0x3C)
+
+#define GV7601_IIC_SLAVE_ADDR					(0x3C)
+
+#define GV7602_IIC_SLAVE_ADDR					(0x3D)
 /* @} */
 
 /* ========================================================================== */
@@ -237,8 +256,6 @@ typedef enum
     DEVICE_STD_D1,
     DEVICE_STD_480P,
     DEVICE_STD_576P,
-    DEVICE_STD_720P_30,
-    DEVICE_STD_720P_25,			
     DEVICE_STD_720P_60,
     DEVICE_STD_720P_50,			
     DEVICE_STD_1080I_60,
@@ -278,6 +295,7 @@ typedef enum
     DEVICE_STD_VGA_1920X1080X60_GTF,//------44
     DEVICE_STD_VGA_1920X1200X60,//------45
     DEVICE_STD_VGA_2560X1440X60,//------46
+    DEVICE_STD_VGA_1920X2160X24,//------47
 
     DEVICE_STD_MUX_2CH_D1,
     DEVICE_STD_MUX_2CH_HALF_D1,

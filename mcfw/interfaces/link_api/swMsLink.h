@@ -36,8 +36,8 @@
 
 
 
-#define SYSTEM_SW_MS_MAX_WIN           (36)
-#define SYSTEM_SW_MS_MAX_CH_ID         (64)
+#define SYSTEM_SW_MS_MAX_WIN           (16)//(36)
+#define SYSTEM_SW_MS_MAX_CH_ID         (16)//(64)
 #define SYSTEM_SW_MS_ALL_CH_ID         (SYSTEM_SW_MS_MAX_CH_ID + 1)
 
 #ifdef TI_816X_BUILD
@@ -67,6 +67,8 @@
 #define SYSTEM_SW_MS_LINK_CMD_SET_CROP_PARAM        (0x8004)
 #define SYSTEM_SW_MS_LINK_CMD_PRINT_BUFFER_STATISTICS        (0x8005)
 #define SYSTEM_SW_MS_LINK_CMD_FLUSH_BUFFERS        (0x8006)
+#define SYSTEM_SW_MS_LINK_CMD_SET_INCHAN_INFO         (0x8007)
+#define SYSTEM_SW_MS_LINK_CMD_AUTO_GET_INCHAN_INFO         (0x8008)
 
 typedef struct
 {
@@ -177,6 +179,12 @@ typedef struct SwMsLink_FlushParams
     UInt32  chNum;
     UInt32  holdLastFrame;
 } SwMsLink_FlushParams;
+
+typedef struct
+{
+	UInt32 chid;
+	System_LinkChInfo chinfo;
+}SwMsLink_InChInfo;
 
 /**
     \brief Dei link register and init

@@ -68,8 +68,8 @@ typedef struct
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static Int32 Device_ad9889GetHdmiChipId(Device_Ad9889Obj* psiiObj,
-                                   Device_HdmiChipId *hdmichipId);
+//static Int32 Device_ad9889GetHdmiChipId(Device_Ad9889Obj* psiiObj,
+ //                                  Device_HdmiChipId *hdmichipId);
 
 static Int32 Device_ad9889GetDetailedChipId(Device_Ad9889Handle handle,
                                           Ptr cmdArgs,
@@ -98,25 +98,25 @@ static Int32 Device_ad9889GetPrms(Device_Ad9889Handle handle,
                                Ptr cmdStatusArgs);
 static Int32 Device_ad9889DeviceInit(Device_Ad9889Obj* pObj);
 
-static Int32 Device_ad9889Reset(Device_Ad9889Obj* pObj);
-static Int32 Device_ad9889Enable(Device_Ad9889Obj* pObj);
-static Int32 Device_ad9889PowerUpTxm(Device_Ad9889Obj* pObj);
-static Int32 Device_ad9889CfgInBus(Device_Ad9889Obj* pObj);
-static Int32 Device_ad9889CfgYcMode(Device_Ad9889Obj* pObj);
-static Int32 Device_ad9889CfgSyncMode(Device_Ad9889Obj* pObj);
-static Int32 Device_ad9889PrgmEmbSyncTimingInfo(
-                Device_Ad9889Obj *siiObj,
-                Device_AD9889ModeInfo *siModeInfo);
-static Int32 Device_ad9889PrgmExtSyncTimingInfo(
-                Device_Ad9889Obj *siiObj,
-                Device_AD9889ModeInfo *siModeInfo);
-static Int32 Device_ad9889PrgmAvInfoFrame(
-                Device_Ad9889Obj *siiObj,
-                Device_AD9889ModeInfo *modeInfo);
-static Int32 Device_ad9889PrgmMdResetRegs(
-                Device_Ad9889Obj *siiObj,
-                Device_AD9889ModeInfo *siModeInfo);
-static Int32 Device_ad9889CalcCRC(UInt8 *regAddr, UInt8 *regValue, UInt32 *regCnt);
+//static Int32 Device_ad9889Reset(Device_Ad9889Obj* pObj);
+//static Int32 Device_ad9889Enable(Device_Ad9889Obj* pObj);
+//static Int32 Device_ad9889PowerUpTxm(Device_Ad9889Obj* pObj);
+//static Int32 Device_ad9889CfgInBus(Device_Ad9889Obj* pObj);
+//static Int32 Device_ad9889CfgYcMode(Device_Ad9889Obj* pObj);
+//static Int32 Device_ad9889CfgSyncMode(Device_Ad9889Obj* pObj);
+//static Int32 Device_ad9889PrgmEmbSyncTimingInfo(
+//                Device_Ad9889Obj *siiObj,
+//                Device_AD9889ModeInfo *siModeInfo);
+//static Int32 Device_ad9889PrgmExtSyncTimingInfo(
+//                Device_Ad9889Obj *siiObj,
+//                Device_AD9889ModeInfo *siModeInfo);
+//static Int32 Device_ad9889PrgmAvInfoFrame(
+//                Device_Ad9889Obj *siiObj,
+ //               Device_AD9889ModeInfo *modeInfo);
+//static Int32 Device_ad9889PrgmMdResetRegs(
+  //              Device_Ad9889Obj *siiObj,
+  //              Device_AD9889ModeInfo *siModeInfo);
+//static Int32 Device_ad9889CalcCRC(UInt8 *regAddr, UInt8 *regValue, UInt32 *regCnt);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -175,6 +175,7 @@ Int32 Device_ad9889_Write8(Device_Ad9889Obj * pObj, UInt8 RegAddr, UInt8 RegVal)
 	regValue[0] = RegVal;
 	
 	retVal = OSA_i2cWrite8 (&gDevice_ad9889CommonObj.i2cHandle, AD9889_IIC_SLAVE_ADDR, regAddr, regValue,1);
+	return 0;
 }
 
 Int32 Device_ad9889Init(void)
@@ -544,7 +545,7 @@ static Int32 Device_ad9889DeviceInit(Device_Ad9889Obj* pObj)
 	
 	return status;
 }
-
+#if 0
 /*
   Device Res-set
 */
@@ -655,7 +656,7 @@ static Int32 Device_ad9889CalcCRC(UInt8 *regAddr, UInt8 *regValue, UInt32 *regCn
 	Int32 retVal = 0;
 	return (retVal);
 }
-
+#endif
 static Int32 Device_ad9889SetPrms(Device_Ad9889Handle handle,
                                Ptr cmdArgs,
                                Ptr cmdStatusArgs)

@@ -21,6 +21,7 @@ typedef struct {
   int fd;
 
 } OSA_I2cHndl;
+int OSA_i2cCreate(Uint8 instId);
 
 int OSA_i2cOpen(OSA_I2cHndl *hndl, Uint8 instId);
 int OSA_i2cRead8(OSA_I2cHndl *hndl, Uint16 devAddr, Uint8 *reg, Uint8 *value, Uint32 count);
@@ -28,6 +29,8 @@ int OSA_i2cWrite8(OSA_I2cHndl *hndl, Uint16 devAddr, Uint8 *reg, Uint8 *value, U
 int OSA_i2cRawWrite8(OSA_I2cHndl *hndl, Uint16 devAddr, Uint8 *value, Uint32 count);
 int OSA_i2cRawRead8(OSA_I2cHndl *hndl, Uint16 devAddr, Uint8 *value, Uint32 count);
 int OSA_i2cClose(OSA_I2cHndl *hndl);
+int OSA_CPLD_i2cRead16(OSA_I2cHndl *hndl,Uint16 devAddr, Uint8 *reg, Uint8 *value, Uint32 count);
+int OSA_CPLD_i2cWrite16(OSA_I2cHndl *hndl, Uint16 devAddr,  Uint8 *reg, Uint8 *value, Uint32 count);
 
 #endif
 

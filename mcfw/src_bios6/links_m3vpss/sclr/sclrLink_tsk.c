@@ -196,15 +196,33 @@ Void SclrLink_tskMain(struct Utils_TskHndl * pTsk, Utils_MsgHndl * pMsg)
                 Utils_tskAckOrFreeMsg(pMsg, status);
                 break;
 				
-			case SCLR_LINK_CMD_SET_SCLR_MODE:
+		case SCLR_LINK_CMD_SET_SCLR_MODE:
 			{
 				SclrLink_SclrMode *params;
-                params = (SclrLink_SclrMode *) Utils_msgGetPrm(pMsg);
-				SclrLink_drvSetScaleMode(pObj, params->SclrMode);
-                Utils_tskAckOrFreeMsg(pMsg, status);
+				params = (SclrLink_SclrMode *) Utils_msgGetPrm(pMsg);
+				SclrLink_drvSetScaleMode(pObj, params);
+				Utils_tskAckOrFreeMsg(pMsg, status);
 			}
-                break;
-				
+			break;
+		case SCLR_LINK_CMD_SET_INCHAN_INFO:
+			{
+				System_LinkChInfo2 *params;
+				params = (System_LinkChInfo2 *) Utils_msgGetPrm(pMsg);
+				SclrLink_drvSetInChInfo(pObj, params);
+				Utils_tskAckOrFreeMsg(pMsg, status);
+			}          
+			break;
+
+		case SCLR_LINK_CMD_SET_AUTO_GET_INCHAN_INFO:
+			{
+				Int32 chId;
+				chId = *(Int32 *) Utils_msgGetPrm(pMsg);
+				SclrLink_drvSetAutoGetInChInfo(pObj, chId);
+				Utils_tskAckOrFreeMsg(pMsg, status);
+			}          
+			break;
+					
+					
             default:
                 Utils_tskAckOrFreeMsg(pMsg, status);
                 break;
@@ -256,7 +274,7 @@ Int32 SclrLink_init()
                                  gSclrLink_tskStack[objId],
                                  SCLR_LINK_TSK_STACK_SIZE, pObj, pObj->name);
         UTILS_assert(status == FVID2_SOK);
-#if 1
+
 		memset(ad_name, 0, 32);
 		UTILS_SNPRINTF(ad_name, "sclr_adjust_infps_%d", objId);
 		status= Reach_tskCreate(&gAdjustInputFrameTsk[objId],
@@ -265,7 +283,7 @@ Int32 SclrLink_init()
 							 gAdjustSclrInputFrameStack[objId],
 							 SCLR_LINK_TSK_STACK_SIZE, pObj, ad_name);
 		UTILS_assert(status == FVID2_SOK);
-#endif
+
     }
 
     return status;

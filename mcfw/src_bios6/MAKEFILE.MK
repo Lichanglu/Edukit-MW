@@ -12,6 +12,16 @@ XEM3_IN_PATH=$(DEST_ROOT)/dvr_rdk/bin/$(PLATFORM)/
 DO_FXN_PROFILE  ?= false
 
 apps:
+	echo "---------------------mcfw_bios6_git----------------------------------"
+	- mkdir $(dvr_rdk_PATH)/mcfw/src_bios6/version
+	@echo "const static char *g_make_build_date = \"`env LANG=en_US.UTF-8 date`\";" >$(dvr_rdk_PATH)/mcfw/src_bios6/version/build_info.h
+	@sed -e "s#<version>#$$(git describe --dirty --always)#g" <$(dvr_rdk_PATH)/mcfw/git_version.h.in> $(dvr_rdk_PATH)/mcfw/git_version.h.tmp
+	@if diff -q $(dvr_rdk_PATH)/mcfw/git_version.h.tmp $(dvr_rdk_PATH)/mcfw/git_version.h >/dev/null 2>&1; then \
+		rm $(dvr_rdk_PATH)/mcfw/git_version.h.tmp; \
+	else \
+		echo "git_version.h.in =>$(dvr_rdk_PATH)/mcfw/src_bios6/version/git_version.h" ; \
+	mv $(dvr_rdk_PATH)/mcfw/git_version.h.tmp $(dvr_rdk_PATH)/mcfw/src_bios6/version/git_version.h; \
+	fi
 ifneq ($(PLATFORM),ti810x-evm)
 	$(MAKE) -C $(dvr_rdk_PATH)/mcfw/src_bios6 CORE=c6xdsp
 endif

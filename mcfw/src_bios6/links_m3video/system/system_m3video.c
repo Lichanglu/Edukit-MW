@@ -56,6 +56,21 @@ Int32 System_deInit()
     return FVID2_SOK;
 }
 
+extern UInt32 gEncLinkRunCount;
+extern UInt32 gDecLinkRunCount;
+static void SystemHeartTskMain(UArg arg0, UArg arg1)
+{
+	while(1)
+	{
+		/*10s打印一次各个任务是运行状态*/
+		Task_sleep(10000);
+		
+		Vps_printf("----------tsk-run---------\n");
+		Vps_printf("=========EncLink:RunCount:%d\n",gEncLinkRunCount);
+		Vps_printf("=========DecLink:RunCount:%d\n",gDecLinkRunCount);
+	}
+}
+
 Void System_initLinks()
 {
     Vps_printf(" %d: SYSTEM  : Initializing Links !!! \r\n", Utils_getCurTimeInMsec());
@@ -66,7 +81,11 @@ Void System_initLinks()
     //DupLink_init();
     MergeLink_init();
 //	NullLink_init();
-
+#if 1
+    Task_Handle tsk;
+    tsk = Task_create(SystemHeartTskMain, NULL, NULL);
+    UTILS_assert(tsk != NULL);
+#endif
     Vps_printf(" %d: SYSTEM  : Initializing Links ... DONE !!! \r\n",
                Utils_getCurTimeInMsec());
 }

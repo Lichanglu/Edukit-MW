@@ -121,9 +121,9 @@ Void *Audio_createG711EncAlgorithm(Void *ctxMem)
     handle->codecType = AUDIO_CODEC_TYPE_G711;
     return handle;
 }
-Void* Audio_setAacEncParam(Void *ctxMem, AENC_CREATE_PARAMS_S *pPrm,int sampleRate)
+Void Audio_setAacEncParam(Void *ctxMem, AENC_CREATE_PARAMS_S *pPrm,int sampleRate)
 {
-	Rpe_Attributes       instAttr = {0};
+//	Rpe_Attributes       instAttr = {0};
     Int32              status;                 
     encContextDsp        *ctx;
     encContext           *handle;
@@ -132,7 +132,7 @@ Void* Audio_setAacEncParam(Void *ctxMem, AENC_CREATE_PARAMS_S *pPrm,int sampleRa
     if (handle == NULL || pPrm == NULL)
     {
         AUDIO_ERROR_PRINT (("AUDIO: Enc creation <malloc> failed...\n"));
-        return NULL;
+        return  ;
     } 
 
     ctx = GET_ENC_INT_STRUCT(handle);
@@ -158,8 +158,10 @@ Void* Audio_setAacEncParam(Void *ctxMem, AENC_CREATE_PARAMS_S *pPrm,int sampleRa
     {
         AUDIO_ERROR_PRINT (("AUDIO: ENC -> Rpe control call XDM_SETPARAMS failed, status: %d\n", status));
         Rpe_delete(ctx->encClientHandle);	
-        return NULL;
+        return ;
     }
+	return ;
+	
 }
 Void* Audio_createAacEncAlgorithm(Void *ctxMem, AENC_CREATE_PARAMS_S *pPrm)
 {
@@ -199,11 +201,11 @@ Void* Audio_createAacEncAlgorithm(Void *ctxMem, AENC_CREATE_PARAMS_S *pPrm)
     encParams->ancFlag        = 0;
     encParams->channelMode    = channMap[pPrm->numberOfChannels];
     encParams->dataEndianness = (XDAS_Int32)(XDM_LE_16);
-    encParams->crcFlag        = 0;
+    encParams->crcFlag        = XDAS_FALSE;
     encParams->dualMonoMode   = 0;
     encParams->encMode        = IAUDIO_CBR;
     encParams->inputFormat    = IAUDIO_INTERLEAVED;
-    encParams->lfeFlag        = 0;
+    encParams->lfeFlag        = XDAS_FALSE;
     encParams->maxBitRate     = 192000;
 
     handle->numChannels       = pPrm->numberOfChannels;
@@ -342,6 +344,7 @@ Void* Audio_createAacEncAlgorithm(Void *ctxMem, AENC_CREATE_PARAMS_S *pPrm)
     return ctxMem;
 }
 
+#if 0
 static uint32_t getostime()
 {
 	struct timeval tv;
@@ -352,6 +355,7 @@ static uint32_t getostime()
 	ultime= tv.tv_sec*1000+tv.tv_usec/1000;
 	return (ultime);
 }
+#endif
 
 
 Int32 audio_encodeAsAac (Void* ctxMem, AENC_PROCESS_PARAMS_S *pPrm)
@@ -380,6 +384,7 @@ Int32 audio_encodeAsAac (Void* ctxMem, AENC_PROCESS_PARAMS_S *pPrm)
         {
              pPrm->inBuf.dataBufSize = ctx->encMinInputBufSize;
         }
+
         ctx->inBufDesc->descs[0].bufSize = pPrm->inBuf.dataBufSize;
         ctx->encInArgs->numInSamples = (ctx->inBufDesc->descs[0].bufSize / handle->inputBytesPerSample);
         ctx->encInArgs->numInSamples /= handle->numChannels;
@@ -654,11 +659,11 @@ Int32 audio_decodeAac (Void* ctxMem, ADEC_PROCESS_PARAMS_S *pPrm)
 			gettimeofday(&tv2, NULL);
 		    if(tv2.tv_usec < tv1.tv_usec)
 		    {
-		        printf("time  %u %u\n", tv2.tv_sec - 1 - tv1.tv_sec, tv2.tv_usec + 1000000 - tv1.tv_usec);
+		        printf("time  %ld %ld\n", (tv2.tv_sec - 1 - tv1.tv_sec), (tv2.tv_usec + 1000000 - tv1.tv_usec));
 		    }
 		    else
 		    {
-		        printf("time  %u %u\n",tv2.tv_sec - tv1.tv_sec, tv2.tv_usec - tv1.tv_usec);
+		        printf("time  %ld %ld\n",(tv2.tv_sec - tv1.tv_sec), (tv2.tv_usec - tv1.tv_usec));
 		    }
 
 

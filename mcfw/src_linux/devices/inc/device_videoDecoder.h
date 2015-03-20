@@ -319,6 +319,20 @@ Typicall API calling sequence for video decoder in context of video capture appl
 #define IOCTL_DEVICE_VIDEO_DECODER_CSC          \
             (DEVICE_VID_DEC_IOCTL_BASE + 0x12)
 
+#define IOCTL_DEVICE_VIDEO_DECODER_3D_EXTERN_INFORM          \
+            (DEVICE_VID_DEC_IOCTL_BASE + 0x13)
+
+#define IOCTL_DEVICE_VIDEO_DECODER_SET_3D_MODE          \
+            (DEVICE_VID_DEC_IOCTL_BASE + 0x14)
+
+#define IOCTL_DEVICE_VIDEO_DECODER_GET_3D_MODE         \
+            (DEVICE_VID_DEC_IOCTL_BASE + 0x15)
+
+#define IOCTL_DEVICE_VIDEO_DECODER_SET_BYPASS_CH          \
+            (DEVICE_VID_DEC_IOCTL_BASE + 0x16)
+
+#define IOCTL_DEVICE_VIDEO_DECODER_GET_BYPASS_CH         \
+            (DEVICE_VID_DEC_IOCTL_BASE + 0x17)
 /* @} */
 
 /**
@@ -592,6 +606,18 @@ typedef struct
 	UInt32	SignalHsfqFpga;
 	UInt32	SignalLinenumFpga;
 } Device_VideoDecoderExternInforms;
+
+typedef struct
+{
+	UInt8	DeviceName[16];
+	UInt32	ModeID[2];
+	UInt32	SignalTmds[2];
+	UInt32	SignalHpv[2];
+	UInt32	SignalFreq[2];
+	UInt32	SignalYPbPr[2];
+	UInt32	SignalHsfqFpga[2];
+	UInt32	SignalLinenumFpga[2];
+} Device_VideoDecoder3DExternInforms;
 
 typedef enum
 {

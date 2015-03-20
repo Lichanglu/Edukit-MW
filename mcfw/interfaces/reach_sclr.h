@@ -33,8 +33,8 @@ Int32 sclr_print_statics(Uint32 sclrId);
 
 Int32 sclr_set_SclrMode(Uint32 sclrId, SclrLink_SclrMode *params);
 
+Int32 sclr_set_inchinfo(Uint32 sclrId, System_LinkChInfo2 *params);
 
-
-
+Int32 sclr_set_auto_get_inchinfo(Uint32 sclrId, Int32 chId);
 #endif
 

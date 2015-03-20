@@ -123,6 +123,7 @@ Int32 NullSrcLink_putEmptyFrames(Utils_TskHndl * pTsk, UInt16 queId,
     return FVID2_SOK;
 }
 
+static UInt32 s_NullSrcGetEmptyFrameNum = 0;
 Int32 NullSrcLink_drvProcessFrames(NullSrcLink_Obj * pObj)
 {
     System_LinkQueInfo *pChInfo;
@@ -139,10 +140,12 @@ Int32 NullSrcLink_drvProcessFrames(NullSrcLink_Obj * pObj)
 
 	if ((Utils_getCurTimeInMsec() - StartTime) > 5 * 1000)
     {
-		NullSrcLink_fillDataPattern(&pObj->outFormat, pObj->outFrames, 1);
+		//NullSrcLink_fillDataPattern(&pObj->outFormat, pObj->outFrames, 1);
 		StartTime = Utils_getCurTimeInMsec();
 
-		Vps_printf("NullSrcLink_fillDataPattern ...... \n");
+		Vps_printf("NullSrcLink_fillDataPattern ......NullSrcGetEmptyFrameNum:%d\n",s_NullSrcGetEmptyFrameNum);
+
+		Utils_bufPrintStatus("NullSrcLink",&pObj->bufOutQue);
     }
 	
 
@@ -153,10 +156,13 @@ Int32 NullSrcLink_drvProcessFrames(NullSrcLink_Obj * pObj)
         if (status != FVID2_SOK)
             continue;
 
+	s_NullSrcGetEmptyFrameNum++;
+
         frameList.frames[frameList.numFrames] = pFrame;
         frameList.numFrames++;
 
         pFrame->channelNum = chId;
+	 pFrame->timeStamp = Utils_getCurTimeInMsec();
 
         if (pChInfo->chInfo[chId].scanFormat == FVID2_SF_INTERLACED)
         {
@@ -263,7 +269,7 @@ Int32 NullSrcLink_fillDataPattern(FVID2_Format * pFormat,
 {
 	UInt32 size[2], frameId, index;
 	Bits8 *pY, *pU, *pV;
-	Bits8 *pdata;
+	//Bits8 *pdata;
 
     size[0] = pFormat->pitch[0] * pFormat->height;
     size[1] = 0;
@@ -317,7 +323,7 @@ Int32 NullSrcLink_fillDataPattern(FVID2_Format * pFormat,
 					pY = pFrame->addr[0][0];
 					pU = pFrame->addr[0][1];
 					pV = pU + 1;	
-					NullSrcLink_fillPic(pY,pU,pV,1920);
+					NullSrcLink_fillPic((char *)pY,(char *)pU,(char *)pV,pFormat->pitch[1]);
 				}
 		    }
 	

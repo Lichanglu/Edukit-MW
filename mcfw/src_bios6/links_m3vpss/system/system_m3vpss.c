@@ -246,7 +246,6 @@ Int32 System_deInit()
    return status;
 }
 
-
 Void System_initLinks()
 {
 
@@ -265,13 +264,11 @@ Void System_initLinks()
    MergeLink_init();
    SelectLink_init();
    GrpxLink_init();
-   AvsyncLink_init();
+   AvsyncLink_init();	
 
 #ifdef SYSTEM_SIMCOP_ENABLE
    AlgLink_init();
 #endif
-
-
    Vps_printf(" %d: SYSTEM  : Initializing Links ... DONE !!! \r\n", Utils_getCurTimeInMsec());
 }
 
@@ -299,6 +296,7 @@ Void System_deInitLinks()
    SclrLink_deInit();
    SwMsLink_deInit();
    AvsyncLink_deInit();
+   
    System_memPrintHeapStatus();
 
    Vps_printf(" %d: SYSTEM  : De-Initializing Links ... DONE !!! \r\n", Utils_getCurTimeInMsec());
@@ -576,24 +574,32 @@ Int32 System_getOutSize(UInt32 outRes, UInt32 * width, UInt32 * height)
 {
     switch (outRes)
     {
+		case VSYS_STD_1920x2160_30:
+			*width  = 1920;
+			*height = 2160;
+		break;
+		case VSYS_STD_3840x1080_30:
+			*width  = 3840;
+			*height = 1080;
+		break;
 		case VSYS_STD_3840x2400_60:
 			*width  = 3840;
-            *height = 2400;
-            break;
+			*height = 2400;
+		break;
 			
 		case VSYS_STD_3840x1200_60:
 			*width  = 3840;
-            *height = 1200;
-            break;
+			*height = 1200;
+		break;
 			
         case VSYS_STD_1920x1200_60:
-            *width = 1920;
-            *height = 1200;
+	            *width = 1920;
+	            *height = 1200;
             break;
-		case VSYS_STD_SXGAP_60:
-			*width = 1440;
-            *height = 1050;
-            break;
+	case VSYS_STD_SXGAP_60:
+		*width = 1440;
+		*height = 1050;
+	break;
 			
        case VSYS_STD_1440_900_60:          
             *width = 1440;
@@ -606,6 +612,10 @@ Int32 System_getOutSize(UInt32 outRes, UInt32 * width, UInt32 * height)
             break;
 			
         case VSYS_STD_720P_60:
+            *width = 1280;
+            *height = 720;
+            break;
+        case VSYS_STD_720P_50:
             *width = 1280;
             *height = 720;
             break;

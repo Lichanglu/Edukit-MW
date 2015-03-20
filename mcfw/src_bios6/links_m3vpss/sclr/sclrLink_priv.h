@@ -14,7 +14,7 @@
 
 #define SCLR_LINK_OBJ_MAX                     (SYSTEM_LINK_ID_SCLR_COUNT)
 
-#define SCLR_LINK_MAX_CH                      (16)
+#define SCLR_LINK_MAX_CH                      (10)
 
 #define SCLR_LINK_MAX_OUT_FRAMES_PER_CH       (SYSTEM_LINK_FRAMES_PER_CH)
 
@@ -52,6 +52,7 @@ typedef struct {
     Vps_FrameParams sclrRtOutFrmPrm;
     Vps_M2mScRtParams sclrRtPrm;
     Bool chRtOutInfoUpdate;
+    Bool chRtInInfoUpdate;
     System_LinkChInfo rtChannelInfo;
 
     /** SCLR link to skip one specific FID type */
@@ -90,6 +91,16 @@ typedef struct {
 	UInt32  outOffset;
 	UInt32  SclrWidth;
 	UInt32  SclrHeight;
+	Bool  	StretchMod;
+
+	UInt32 start_time;
+	UInt32 prev_fps;
+	UInt32 frame_cnt;
+	UInt32 frame_mis;
+	UInt32 skip_flag;
+	UInt32 in_frame_cnt;
+	UInt32 out_frame_cnt;
+	UInt32 in_prev_time;
 }SclrLink_ChObj;
 
 
@@ -155,7 +166,7 @@ typedef struct {
 
 	UInt32					ulSCHistoryFrameRate[SCLR_LINK_MAX_CH];
 	UInt32					ulSclrFrameRate[SCLR_LINK_MAX_CH];
-	Bool  					StretchMod;    /* TRUE:  proportion sclr FALSE: Full screen mode */
+//	Bool  					StretchMod;    /* TRUE:  proportion sclr FALSE: Full screen mode */
 	Utils_DmaChObj 			dmaObj;
 
 } SclrLink_Obj;
@@ -191,7 +202,9 @@ Int32 SclrLink_drvDynamicSkipFidType(SclrLink_Obj * pObj,
                                      SclrLink_chDynamicSkipFidType * params);
 UInt32 SclrLink_CalculationSclrMode(SclrLink_CalSclrMode CalSclrMode, UInt32 *Width, UInt32 *Height);
 
-Int32 SclrLink_drvSetScaleMode(SclrLink_Obj * pObj, Bool ScaleMode);
+Int32 SclrLink_drvSetScaleMode(SclrLink_Obj * pObj, SclrLink_SclrMode *pSclrMode);
+Int32 SclrLink_drvSetInChInfo(SclrLink_Obj * pObj, System_LinkChInfo2 *pchinfo);
+Int32 SclrLink_drvSetAutoGetInChInfo(SclrLink_Obj * pObj, Int32 chId);
 #endif
 
 

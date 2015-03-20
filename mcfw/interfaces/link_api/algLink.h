@@ -146,18 +146,18 @@ static inline void AlgLink_CreateParams_Init(AlgLink_CreateParams *pPrm)
 
     pPrm->scdCreateParams.maxWidth				= 352;
     pPrm->scdCreateParams.maxHeight				= 288;
-    pPrm->scdCreateParams.maxStride				= 704;
+    pPrm->scdCreateParams.maxStride				= 1920;
     pPrm->scdCreateParams.numValidChForSCD      = 0;
     pPrm->scdCreateParams.numBufPerCh           = 6;
 
     pPrm->scdCreateParams.numSecs2WaitB4Init	= 3;
     pPrm->scdCreateParams.numSecs2WaitB4FrmAlert= 1;
     pPrm->scdCreateParams.numSecs2WaitAfterFrmAlert  = 2;
-    pPrm->scdCreateParams.inputFrameRate        = 30;
-    pPrm->scdCreateParams.outputFrameRate       = 5;
+    pPrm->scdCreateParams.inputFrameRate        = 2;
+    pPrm->scdCreateParams.outputFrameRate       = 2;
 
     pPrm->scdCreateParams.enableMotionNotify    = TRUE;
-    pPrm->scdCreateParams.enableTamperNotify    = TRUE;
+    pPrm->scdCreateParams.enableTamperNotify    = FALSE;
 
     numHorzBlks		= pPrm->scdCreateParams.maxWidth / 32;
     numVertBlks		= pPrm->scdCreateParams.maxHeight / 12;
@@ -166,7 +166,7 @@ static inline void AlgLink_CreateParams_Init(AlgLink_CreateParams *pPrm)
     for(chId = 0; chId<ALG_LINK_SCD_MAX_CH; chId++)
     {
         pPrm->scdCreateParams.chDefaultParams[chId].chId = chId;
-        pPrm->scdCreateParams.chDefaultParams[chId].mode				= ALG_LINK_SCD_DETECTMODE_MONITOR_BLOCKS_AND_FRAME;
+	pPrm->scdCreateParams.chDefaultParams[chId].mode				= ALG_LINK_SCD_DETECTMODE_MONITOR_BLOCKS;
         pPrm->scdCreateParams.chDefaultParams[chId].frmIgnoreLightsON	= FALSE;
         pPrm->scdCreateParams.chDefaultParams[chId].frmIgnoreLightsOFF	= FALSE;
         pPrm->scdCreateParams.chDefaultParams[chId].frmSensitivity		= ALG_LINK_SCD_SENSITIVITY_MID;
@@ -181,7 +181,7 @@ static inline void AlgLink_CreateParams_Init(AlgLink_CreateParams *pPrm)
         {
             for(x = 0; x < numHorzBlks; x++)
             {
-                pPrm->scdCreateParams.chDefaultParams[chId].blkConfig[i].sensitivity = ALG_LINK_SCD_SENSITIVITY_MID;
+                pPrm->scdCreateParams.chDefaultParams[chId].blkConfig[i].sensitivity = ALG_LINK_SCD_SENSITIVITY_MAX;
                 pPrm->scdCreateParams.chDefaultParams[chId].blkConfig[i].monitored	 = 1;
                 i++;
             }

@@ -22,8 +22,17 @@
 
 #include <mcfw/interfaces/link_api/system.h>
 
+
+#define DUP_LINK_CMD_SET_INCHAN_INFO         (0x7000)
+
 /** \brief Max output queues to which a given DUP link can connect to */
 #define DUP_LINK_MAX_OUT_QUE	(5)
+
+typedef struct
+{
+	UInt32 chid;
+	System_LinkChInfo chinfo;
+}System_dupChInfo;
 
 /**
     \brief DUP link create parameters

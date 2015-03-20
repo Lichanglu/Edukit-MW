@@ -74,14 +74,22 @@ Int32 Utils_tskCreate(Utils_TskHndl * pHndl,
     return status;
 }
 
+static Void Reach_Utils_tskMain(UArg arg0, UArg arg1)
+{
+    Utils_TskHndl *pHndl = (Utils_TskHndl *) arg0;
+
+    UTILS_assert(pHndl != NULL);
+
+    if (pHndl->funcMain)
+        pHndl->funcMain(pHndl, NULL);
+}
+
 Int32 Reach_tskCreate(Utils_TskHndl * pHndl,
                       Utils_TskFuncMain funcMain,
                       UInt32 tskPri,
                       UInt8 * stackAddr,
                       UInt32 stackSize, Ptr appData, char *tskName)
 {
-    Int32 status;
-
     UTILS_assert(pHndl != NULL);
     UTILS_assert(funcMain != NULL);
 
@@ -91,10 +99,6 @@ Int32 Reach_tskCreate(Utils_TskHndl * pHndl,
     pHndl->tskPri = tskPri;
     pHndl->appData = appData;
 
-    status = Utils_mbxCreate(&pHndl->mbx);
-
-    UTILS_assert(status == FVID2_SOK);
-
     Task_Params_init(&pHndl->tskParams);
 
     pHndl->tskParams.arg0 = (UArg) pHndl;
@@ -103,13 +107,45 @@ Int32 Reach_tskCreate(Utils_TskHndl * pHndl,
     pHndl->tskParams.stack = pHndl->stackAddr;
     pHndl->tskParams.stackSize = pHndl->stackSize;
 
-    pHndl->tsk = Task_create(funcMain, &pHndl->tskParams, NULL);
+    pHndl->tsk = Task_create(Reach_Utils_tskMain, &pHndl->tskParams, NULL);
 
     UTILS_assert(pHndl->tsk != NULL);
 
     Utils_prfLoadRegister(pHndl->tsk, tskName);
-    return status;
+    return FVID2_SOK;
 }
+
+Int32 Reach_Utils_tskDelete(Utils_TskHndl * pHndl)
+{
+    UInt32 sleepTime = 8;                                  /* in OS ticks */
+
+    Task_sleep(1);
+
+    while (Task_Mode_TERMINATED != Task_getMode(pHndl->tsk))
+    {
+
+        Task_sleep(sleepTime);
+
+        sleepTime >>= 1;
+
+        if (sleepTime == 0)
+        {
+            char name[64];
+
+            strcpy(name, "INVALID_TSK");
+            Utils_prfGetTaskName(pHndl->tsk, name);
+            Vps_printf("Task Delete Error!!!!!!, task %s not deleted\n", name);
+            UTILS_assert(0);
+        }
+    }
+
+    Utils_prfLoadUnRegister(pHndl->tsk);
+
+    Task_delete(&pHndl->tsk);
+
+    return FVID2_SOK;
+}
+
 Int32 Utils_tskDelete(Utils_TskHndl * pHndl)
 {
     UInt32 sleepTime = 8;                                  /* in OS ticks */

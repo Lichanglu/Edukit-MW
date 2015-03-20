@@ -153,10 +153,10 @@ typedef enum
 	/**< 1360x768 60 PFS VESA standard. */
 #endif
 
- //#ifndef HDVPSS_VER_01_00_01_36
+ #ifndef HDVPSS_VER_01_00_01_36
 	VSYS_STD_1440_900_60,
 	/**< 1440x900 60 PFS VESA>*/
-//#endif
+#endif
 
    VSYS_STD_1920x1200_60,
     /**< 1900x1200 60FPS VESA standard. */
@@ -169,6 +169,13 @@ typedef enum
 
 	VSYS_STD_3840x2400_60,
     /**< 3840x2400 60FPS VESA standard. */
+
+	VSYS_STD_1920x2160_30,
+    /**< 1920x2160 30FPS VESA standard. */
+	VSYS_STD_1920x2400_30,
+    /**< 1920x2400 30FPS VESA standard. */
+	VSYS_STD_3840x1080_30,
+    /**< 3840x1080 30FPS VESA standard. */
 
 #ifdef HDVPSS_VER_01_00_01_36
 	VSYS_STD_MUX_2CH_D1,

@@ -34,12 +34,13 @@ Int32 dis_start_drv(Uint32 displayId);
 Int32 dis_stop_drv(Uint32 displayId);
 
 Int32 dis_set_resolution(UInt32 displayId, UInt32 resolution);
+Int32 test_dis_set_system_resolution(UInt32 displayId, UInt32 resolution);
 
 Void dis_params_init(VDIS_PARAMS_S * pContext);
 
 Int32 dis_config_adv9889(Void **phandle);
 
-
+Int32 getoutfps(UInt32 outRes, UInt32 *Fps);
 
 
 #endif

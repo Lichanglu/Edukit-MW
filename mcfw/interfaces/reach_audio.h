@@ -34,8 +34,8 @@ extern "C" {
 
 #define AAC_ENC							(0)
 #define AAC_DEC							(1)
-#define AUDIO_ENCDEC_INBUF_QUE_MAX			(12)
-#define AUDIO_ENCDEC_OUTBUF_QUE_MAX			(12)
+#define AUDIO_ENCDEC_INBUF_QUE_MAX			(6)
+#define AUDIO_ENCDEC_OUTBUF_QUE_MAX			(6)
 
 
 #define AUDIO_INDATA_GET_FXN_TSK_PRI		(99)

@@ -90,8 +90,11 @@ Void M3VPSS_main(UArg arg0, UArg arg1)
 Int32 main(void)
 {
     Int32 retVal;
+    float m3Freq = Utils_getFrequency(PLL_MODULE_DUCATI_M3);
 
-    Utils_setCpuFrequency(SYSTEM_M3VPSS_FREQ);
+    if (m3Freq <= 0)
+        m3Freq = SYSTEM_M3VPSS_FREQ;
+    Utils_setCpuFrequency(m3Freq*1000*1000);
 
     SysLink_setup ();
 
