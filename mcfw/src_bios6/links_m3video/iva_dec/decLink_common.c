@@ -1409,6 +1409,7 @@ static Int32 DecLink_codecSubmitData(DecLink_Obj * pObj)
     Bitstream_Buf *pInBuf;
     FVID2_Frame *pOutFrame;
     Int32 status = FVID2_EFAIL, numReqObjPerProcess;
+    Int32 Return_status = FVID2_EFAIL;
     UInt32 tskId, i;
     static UInt32 startChID = 0;
     UInt key;
@@ -1513,6 +1514,7 @@ static Int32 DecLink_codecSubmitData(DecLink_Obj * pObj)
                                  pReqObj, BIOS_NO_WAIT);
                 UTILS_assert(status == FVID2_SOK);
                 pChObj->processReqestCount++;
+		  Return_status = FVID2_SOK;
             }
             else
             {
@@ -1540,7 +1542,7 @@ static Int32 DecLink_codecSubmitData(DecLink_Obj * pObj)
       }
     }
 
-    return status;
+    return Return_status;
 }
 
 Int32 DecLink_codecProcessData(DecLink_Obj * pObj)
